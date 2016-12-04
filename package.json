@@ -11,6 +11,7 @@
   "dependencies": {
     "express": "^4.14.0",
     "letsencrypt-express": "^2.0.5",
-    "pm2": "^2.1.6"
+    "pm2": "^2.1.6",
+    "request": "^2.79.0"
   }
 }
