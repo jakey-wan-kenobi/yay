@@ -34,9 +34,27 @@ function approveDomains (opts, certs, cb) {
 }
 
 app.get('/', function (req, res) {
-  console.log('Hello world!')
-  res.send('Hello World!')
+  res.send('<a href="https://slack.com/oauth/authorize?scope=incoming-webhook,commands,bot&client_id=104436581472.112407214276"><img alt="Add to Slack" height="40" width="139" src="https://platform.slack-edge.com/img/add_to_slack.png" srcset="https://platform.slack-edge.com/img/add_to_slack.png 1x, https://platform.slack-edge.com/img/add_to_slack@2x.png 2x" /></a>')
 })
 
 http.createServer(lex.middleware(require('redirect-https')())).listen(80)
 https.createServer(lex.httpsOptions, lex.middleware(app)).listen(443)
+
+/* *******************************************
+  API ENDPOINTS
+*********************************************/
+
+let api = express()
+https.createServer(lex.httpsOptions, lex.middleware(api)).listen(3000)
+
+api.get('/oauth-redirect', function (req, res) {
+  res.header('Access-Control-Allow-Origin', '*')
+  res.header('Access-Control-Allow-Headers', 'X-Requested-With, Content-Type, Origin, Accept')
+  res.header('Access-Control-Allow-Methods', 'Post, Get, Options')
+  if (req.query.error) {
+    res.send(req.query.error)
+    return
+  }
+  res.send(req.query)
+  // TODO: Verify that req.query.state matches the unique state of the user (still tbd) and then exchange the req.query.code for an access token as specified here: https://api.slack.com/methods/oauth.access
+})
