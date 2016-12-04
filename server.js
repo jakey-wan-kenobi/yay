@@ -3,12 +3,12 @@ let app = express()
 let https = require('https')
 let http = require('http')
 
-/* ******************************************* LETS-ENCRYPT SSL SETUP *********************************************/
+/* *******************************************
+  LETS-ENCRYPT SSL SETUP
+*********************************************/
 
 // Returns an instance of node-letsencrypt with additional helper methods
 let lex = require('letsencrypt-express').create({
-  // NOTE: Set to https://acme-v01.api.letsencrypt.org/directory in production,
-  // https://acme-staging.api.letsencrypt.org/directory in staging
   server: 'https://acme-v01.api.letsencrypt.org/directory',
   challenges: { 'http-01': require('le-challenge-fs').create({ webrootPath: '/tmp/acme-challenges' }) },
   store: require('le-store-certbot').create({ webrootPath: '/tmp/acme-challenges' }),
