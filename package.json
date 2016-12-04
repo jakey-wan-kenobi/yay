@@ -7,5 +7,8 @@
     "test": ""
   },
   "author": "",
-  "license": "ISC"
+  "license": "ISC",
+  "dependencies": {
+    "pm2": "^2.1.6"
+  }
 }
