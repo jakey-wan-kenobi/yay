@@ -41,6 +41,23 @@ http.createServer(lex.middleware(require('redirect-https')())).listen(80)
 https.createServer(lex.httpsOptions, lex.middleware(app)).listen(443)
 
 /* *******************************************
+  SETUP FIREBASE ACCESS
+*********************************************/
+
+let admin = require('firebase-admin')
+
+admin.initializeApp({
+  credential: admin.credential.cert('yay-app-12359-firebase-adminsdk-dsrhf-f7ffb3cda0.json'),
+  databaseURL: 'https://yay-app-12359.firebaseio.com'
+})
+
+let db = admin.database()
+let ref = db.ref('/')
+ref.once('value', function (snapshot) {
+  // console.log(snapshot.val())
+})
+
+/* *******************************************
   API ENDPOINTS
 *********************************************/
 
@@ -57,8 +74,7 @@ api.get('/oauth-redirect', function (req, res) {
     return
   }
   // TODO: Verify that req.query.state matches the unique state of the user (still tbd) and then exchange the req.query.code for an access token as specified here: https://api.slack.com/methods/oauth.access
-  let exchange = _exchangeCodeForToken(req.query.code)
-  console.log(exchange)
+  _exchangeCodeForToken(req.query.code)
 })
 
 // Exchange the Slack code for an access token (see here: https://api.slack.com/methods/oauth.access)
@@ -78,14 +94,21 @@ function _exchangeCodeForToken (codeRecieved) {
       return
     }
     // TODO: Handle success. Save to Firebase. Etc.
-    // _saveNewSlackAccount(body)
+    _saveNewSlackAccount(JSON.parse(body))
   })
 }
 
 // Save the data received from Slack to Firebase
-// function _saveNewSlackAccount (body) {
-//   if (!body.ok) {
-//     // NOTE: Error ocurred here.
-//     return
-//   }
-// }
+function _saveNewSlackAccount (body) {
+  // If we have an error, stop
+  if (body.ok !== true) {
+    // NOTE: Error ocurred here.
+    console.log('body ok false')
+    return
+  }
+  // If we already have this team saved, stop
+  // TODO: Should we save each user under their team ID? Then we can just check if that exists in DB (rather than looping?)
+  // TODO: Save new data here.
+  let accounts = db.ref('/slack-accounts')
+  accounts.push().set({body}, console.log('success?'))
+}
