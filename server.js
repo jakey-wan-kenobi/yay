@@ -34,7 +34,7 @@ function approveDomains (opts, certs, cb) {
 }
 
 app.get('/', function (req, res) {
-  res.send('<a href="https://slack.com/oauth/authorize?scope=incoming-webhook,commands,bot&client_id=104436581472.112407214276"><img alt="Add to Slack" height="40" width="139" src="https://platform.slack-edge.com/img/add_to_slack.png" srcset="https://platform.slack-edge.com/img/add_to_slack.png 1x, https://platform.slack-edge.com/img/add_to_slack@2x.png 2x" /></a>')
+  res.send('<a href="https://slack.com/oauth/authorize?scope=commands,bot&client_id=104436581472.112407214276"><img alt="Add to Slack" height="40" width="139" src="https://platform.slack-edge.com/img/add_to_slack.png" srcset="https://platform.slack-edge.com/img/add_to_slack.png 1x, https://platform.slack-edge.com/img/add_to_slack@2x.png 2x" /></a>')
 })
 
 http.createServer(lex.middleware(require('redirect-https')())).listen(80)
@@ -118,3 +118,60 @@ function _saveNewSlackAccount (body) {
   // Save the new team and data to Firebase
   accounts.child(body.team_id).set(body, console.log('success?'))
 }
+
+/* *******************************************
+    YAY SLACK COMMAND
+*********************************************/
+api.post('/yay', function (req, res) {
+  res.header('Access-Control-Allow-Origin', '*')
+  res.header('Access-Control-Allow-Headers', 'X-Requested-With, Content-Type, Origin, Accept')
+  res.header('Access-Control-Allow-Methods', 'Post, Get, Options')
+
+  // Make sure it's the right user/team
+  // if (req.body.token !== 'XH7s8DjEOHTBEyO6tOGKZx9Y') {
+  //   return false
+  // }
+
+  var messageBlock = {
+    "text": "Wonderful! Let's send a gift to Beth. How about this?",
+    "attachments": [
+        {
+          "fallback": "Required plain-text summary of the attachment.",
+          "color": "#59FFBA",
+          // "pretext": "Wonderful! Let's send a gift to Beth. How about this?",
+          "title": "Golden Coast Soy Candle by P.F. Candle Co.",
+          "title_link": "https://hintsygifts.com/shop/P.F.-Candle-Co./Soy-Candle",
+			    "text": "$18 | Hand poured in a sunny studio in LA's Arts District.",
+          "image_url": "https://res.cloudinary.com/hintsy/image/upload/v1480701134/amberandmosscandle_xzgufv.jpg",
+          // "thumb_url": "http://example.com/path/to/thumb.png",
+          // "footer": "Slack API",
+          // "footer_icon": "https://platform.slack-edge.com/img/default_application_icon.png",
+          // "ts": 123456789,
+          "actions": [
+            {
+                "name": "Yes",
+                "text": "Yes, that's perfect!",
+                "type": "button",
+                "style": "primary",
+                "value": "true"
+            },
+            {
+                "name": "No",
+                "text": "No, try again",
+                "type": "button",
+                "value": "false"
+            },
+            {
+                "name": "Cancel",
+                "text": "Cancel",
+                "style": "danger",
+                "type": "button",
+                "value": "cancel"
+            }
+          ]
+      }
+    ]
+  }
+
+  res.send(messageBlock)
+})
