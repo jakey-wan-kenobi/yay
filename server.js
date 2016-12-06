@@ -133,40 +133,40 @@ api.post('/yay', function (req, res) {
   // }
 
   var messageBlock = {
-    "text": "Wonderful! Let's send a prize to Beth. How about this?",
-    "attachments": [
-        {
-          "callback_id": "choose_prize",
-          "fallback": "Required plain-text summary of the attachment.",
-          "color": "#59FFBA",
-          // "pretext": "Wonderful! Let's send a gift to Beth. How about this?",
-          "title": "Golden Coast Soy Candle by P.F. Candle Co.",
-          "title_link": "https://hintsygifts.com/shop/P.F.-Candle-Co./Soy-Candle",
-			    "text": "$18 | Hand poured in a sunny studio in LA's Arts District.",
-          "image_url": "https://res.cloudinary.com/hintsy/image/upload/v1480701134/amberandmosscandle_xzgufv.jpg",
-          // "thumb_url": "http://example.com/path/to/thumb.png",
-          // "footer": "Slack API",
-          // "footer_icon": "https://platform.slack-edge.com/img/default_application_icon.png",
-          // "ts": 123456789,
-          "actions": [
-            {
-                "name": "did_choose_prize",
-                "text": "Yes, that's perfect!",
-                "type": "button",
-                "style": "primary"
-            },
-            {
-                "name": "choose_next_prize",
-                "text": "No, try again",
-                "type": "button"
-            },
-            {
-                "name": "cancel",
-                "text": "Cancel",
-                "style": "danger",
-                "type": "button"
-            }
-          ]
+    'text': 'Wonderful! Let\'s send a prize to Beth. How about this?',
+    'attachments': [
+      {
+        'callback_id': 'choose_prize',
+        'fallback': 'Required plain-text summary of the attachment.',
+        'color': '#59FFBA',
+        // "pretext": "Wonderful! Let's send a gift to Beth. How about this?",
+        'title': 'Golden Coast Soy Candle by P.F. Candle Co.',
+        'title_link': 'https://hintsygifts.com/shop/P.F.-Candle-Co./Soy-Candle',
+        'text': '$18 | Hand poured in a sunny studio in LA\'s Arts District.',
+        'image_url': 'https://res.cloudinary.com/hintsy/image/upload/v1480701134/amberandmosscandle_xzgufv.jpg',
+        // "thumb_url": "http://example.com/path/to/thumb.png",
+        // "footer": "Slack API",
+        // "footer_icon": "https://platform.slack-edge.com/img/default_application_icon.png",
+        // "ts": 123456789,
+        'actions': [
+          {
+            'name': 'did_choose_prize',
+            'text': 'Yes, that\'s perfect!',
+            'type': 'button',
+            'style': 'primary'
+          },
+          {
+            'name': 'choose_next_prize',
+            'text': 'No, try again',
+            'type': 'button'
+          },
+          {
+            'name': 'cancel',
+            'text': 'Cancel',
+            'style': 'danger',
+            'type': 'button'
+          }
+        ]
       }
     ]
   }
