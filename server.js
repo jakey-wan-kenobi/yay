@@ -153,21 +153,18 @@ api.post('/yay', function (req, res) {
                 "name": "did_choose_prize",
                 "text": "Yes, that's perfect!",
                 "type": "button",
-                "style": "primary",
-                "value": "true"
+                "style": "primary"
             },
             {
-                "name": "did_choose_prize",
+                "name": "choose_next_prize",
                 "text": "No, try again",
-                "type": "button",
-                "value": "false"
+                "type": "button"
             },
             {
-                "name": "Cancel",
+                "name": "cancel",
                 "text": "Cancel",
                 "style": "danger",
-                "type": "button",
-                "value": "cancel"
+                "type": "button"
             }
           ]
       }
@@ -192,6 +189,14 @@ api.post('/yay-message-buttons', function (req, res) {
   // if (req.body.token !== 'XH7s8DjEOHTBEyO6tOGKZx9Y') {
   //   return false
   // }
-  console.log(req.body.payload)
+  let data = JSON.parse(req.body.payload)
+  // NOTE: From Slack docs: Though presented as an array, at this time you'll only receive a single action per incoming invocation.
+  if (data.actions[0].name === 'did_choose_prize') {
+    res.send('prize chosen')
+  } else if (data.actions[0].name === 'choose_next_prize') {
+    res.send('didn\'t choose prize')
+  } else if (data.actions[0].name === 'cancel') {
+    res.send('canceled prize')
+  }
   // res.send('yes')
 })
