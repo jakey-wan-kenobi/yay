@@ -185,11 +185,12 @@ api.post('/yay-message-buttons', function (req, res) {
   res.header('Access-Control-Allow-Headers', 'X-Requested-With, Content-Type, Origin, Accept')
   res.header('Access-Control-Allow-Methods', 'Post, Get, Options')
 
-  // Make sure it's the right user/team
+  // Make sure the request is coming from Slack TODO: make env variable
   // if (req.body.token !== 'XH7s8DjEOHTBEyO6tOGKZx9Y') {
   //   return false
   // }
   let data = JSON.parse(req.body.payload)
+  console.log(data)
   // NOTE: From Slack docs: "Though presented as an array, at this time you'll only receive a single action per incoming invocation."
   if (data.actions[0].name === 'did_choose_prize') {
     res.send('prize chosen')
