@@ -34,7 +34,7 @@ function approveDomains (opts, certs, cb) {
 }
 
 app.get('/', function (req, res) {
-  res.send('<a href="https://slack.com/oauth/authorize?scope=commands,bot&client_id=104436581472.112407214276"><img alt="Add to Slack" height="40" width="139" src="https://platform.slack-edge.com/img/add_to_slack.png" srcset="https://platform.slack-edge.com/img/add_to_slack.png 1x, https://platform.slack-edge.com/img/add_to_slack@2x.png 2x" /></a>')
+  res.send('<a href="https://slack.com/oauth/authorize?scope=commands,bot,users:read&client_id=104436581472.112407214276"><img alt="Add to Slack" height="40" width="139" src="https://platform.slack-edge.com/img/add_to_slack.png" srcset="https://platform.slack-edge.com/img/add_to_slack.png 1x, https://platform.slack-edge.com/img/add_to_slack@2x.png 2x" /></a>')
 })
 
 http.createServer(lex.middleware(require('redirect-https')())).listen(80)
@@ -122,6 +122,9 @@ function _saveNewSlackAccount (body) {
 /* *******************************************
     YAY SLASH COMMAND
 *********************************************/
+// Parse application/x-www-form-urlencoded
+let bodyParser = require('body-parser')
+api.use(bodyParser.urlencoded({ extended: false }))
 api.post('/yay', function (req, res) {
   res.header('Access-Control-Allow-Origin', '*')
   res.header('Access-Control-Allow-Headers', 'X-Requested-With, Content-Type, Origin, Accept')
@@ -132,26 +135,65 @@ api.post('/yay', function (req, res) {
   //   return false
   // }
 
+  let data = req.body
+
+  // Step 1: TODO: Parse the user name out of the req.body.text field. Use a regex pattern to grab from @string. For now, just grabbing entire text body
+  // const recipient = data.text
+
+  // Step 2: Get "access_token" from Firebase with "data.team_id"
+  let accounts = db.ref('/slack_accounts/' + data.team_id)
+  accounts.once('value').then(function (snapshot) {
+    let access_token = snapshot.child('access_token').val()
+    _getUserList(access_token)
+  })
+
+  // Step 3: Get user list using "access_token"
+  function _getUserList (access_token) {
+    request.post({
+      url: 'https://slack.com/api/users.list',
+      form: {
+        // TODO: Put this in an .env file
+        token: access_token
+      }
+    }, function (err, httpResponse, body) {
+      if (err) {
+        // TODO: Handle error
+        return
+      }
+      // TODO: Step 4 here
+      console.log(JSON.parse(body))
+    })
+  }
+
+  // Step 4: TODO: Parse through member list to find member with "name" that equals handle we've parsed out of text
+
+  // Example request body in "req.body"
+  // { token: 'ERJo2Nrv9AE5fULeYegRHIWS',
+  //   team_id: 'T32CUH3DW',
+  //   team_domain: 'hintsy',
+  //   channel_id: 'D3AGCH5EG',
+  //   channel_name: 'directmessage',
+  //   user_id: 'U3326P63D',
+  //   user_name: 'jake',
+  //   command: '/yay',
+  //   text: '@jake',
+  //   response_url: 'https://hooks.slack.com/commands/T32CUH3DW/113315981924/7KqhP2GqmwhQVs5ebFcflCvY' }
+
   var messageBlock = {
-    'text': 'Wonderful! Let\'s send a prize to Beth. How about this?',
+    'text': 'Wonderful! Let\'s send a prize to @hintsybeth. How about this?',
     'attachments': [
       {
         'callback_id': 'choose_prize',
         'fallback': 'Required plain-text summary of the attachment.',
         'color': '#59FFBA',
-        // "pretext": "Wonderful! Let's send a gift to Beth. How about this?",
         'title': 'Golden Coast Soy Candle by P.F. Candle Co.',
         'title_link': 'https://hintsygifts.com/shop/P.F.-Candle-Co./Soy-Candle',
         'text': '$18 | Hand poured in a sunny studio in LA\'s Arts District.',
         'image_url': 'https://res.cloudinary.com/hintsy/image/upload/v1480701134/amberandmosscandle_xzgufv.jpg',
-        // "thumb_url": "http://example.com/path/to/thumb.png",
-        // "footer": "Slack API",
-        // "footer_icon": "https://platform.slack-edge.com/img/default_application_icon.png",
-        // "ts": 123456789,
         'actions': [
           {
             'name': 'did_choose_prize',
-            'text': 'Yes, that\'s perfect!',
+            'text': 'Yay, that\'s perfect!',
             'type': 'button',
             'style': 'primary'
           },
@@ -177,9 +219,6 @@ api.post('/yay', function (req, res) {
 /* *******************************************
     MESSAGE BUTTON HANDLER
 *********************************************/
-// Parse application/x-www-form-urlencoded
-let bodyParser = require('body-parser')
-api.use(bodyParser.urlencoded({ extended: false }))
 api.post('/yay-message-buttons', function (req, res) {
   res.header('Access-Control-Allow-Origin', '*')
   res.header('Access-Control-Allow-Headers', 'X-Requested-With, Content-Type, Origin, Accept')
@@ -195,7 +234,40 @@ api.post('/yay-message-buttons', function (req, res) {
   if (data.actions[0].name === 'did_choose_prize') {
     res.send('prize chosen')
   } else if (data.actions[0].name === 'choose_next_prize') {
-    res.send('didn\'t choose prize')
+    let differentPrize = {
+      'text': 'Okay, tough crowd. How about this one?',
+      'attachments': [
+        {
+          'callback_id': 'choose_prize',
+          'fallback': 'Required plain-text summary of the attachment.',
+          'color': '#59FFBA',
+          'title': 'Special Edition Notebooks by Field Notes',
+          'title_link': 'https://hintsygifts.com/shop/Field-Notes/Special-Edition-Notebooks',
+          'text': '$13 | Waterproof and tear-proof, this paper will survive the rough and tumble of your journeys.',
+          'image_url': 'https://res.cloudinary.com/hintsy/image/upload/v1477860719/expedition1_vg9s9f.jpg',
+          'actions': [
+            {
+              'name': 'did_choose_prize',
+              'text': 'Yay, that\'s perfect!',
+              'type': 'button',
+              'style': 'primary'
+            },
+            {
+              'name': 'choose_next_prize',
+              'text': 'No, try again',
+              'type': 'button'
+            },
+            {
+              'name': 'cancel',
+              'text': 'Cancel',
+              'style': 'danger',
+              'type': 'button'
+            }
+          ]
+        }
+      ]
+    }
+    res.send(differentPrize)
   } else if (data.actions[0].name === 'cancel') {
     res.send('canceled prize')
   }
