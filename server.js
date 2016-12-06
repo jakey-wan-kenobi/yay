@@ -133,7 +133,7 @@ api.post('/yay', function (req, res) {
   // }
 
   var messageBlock = {
-    "text": "Wonderful! Let's send a gift to Beth. How about this?",
+    "text": "Wonderful! Let's send a prize to Beth. How about this?",
     "attachments": [
         {
           "callback_id": "choose_prize",
