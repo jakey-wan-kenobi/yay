@@ -106,9 +106,15 @@ function _saveNewSlackAccount (body) {
     console.log('body ok false')
     return
   }
-  // If we already have this team saved, stop
-  // TODO: Should we save each user under their team ID? Then we can just check if that exists in DB (rather than looping?)
-  // TODO: Save new data here.
   let accounts = db.ref('/slack-accounts')
-  accounts.push().set({body}, console.log('success?'))
+  // Check whether team already exists in our Firebase
+  accounts.once('value').then(function (snapshot) {
+    if (snapshot.child(body.team_id).exists()) {
+      console.log('this team exists')
+      // TODO: This team already exists -- what do we want to do now?
+      // return
+    }
+  })
+  // Save the new team and data to Firebase
+  accounts.child(body.team_id).set(body, console.log('success?'))
 }
