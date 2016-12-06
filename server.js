@@ -106,7 +106,7 @@ function _saveNewSlackAccount (body) {
     console.log('body ok false')
     return
   }
-  let accounts = db.ref('/slack-accounts')
+  let accounts = db.ref('/slack_accounts')
   // Check whether team already exists in our Firebase
   accounts.once('value').then(function (snapshot) {
     if (snapshot.child(body.team_id).exists()) {
@@ -190,7 +190,7 @@ api.post('/yay-message-buttons', function (req, res) {
   //   return false
   // }
   let data = JSON.parse(req.body.payload)
-  // NOTE: From Slack docs: Though presented as an array, at this time you'll only receive a single action per incoming invocation.
+  // NOTE: From Slack docs: "Though presented as an array, at this time you'll only receive a single action per incoming invocation."
   if (data.actions[0].name === 'did_choose_prize') {
     res.send('prize chosen')
   } else if (data.actions[0].name === 'choose_next_prize') {
