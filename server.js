@@ -120,7 +120,7 @@ function _saveNewSlackAccount (body) {
 }
 
 /* *******************************************
-    YAY SLACK COMMAND
+    YAY SLASH COMMAND
 *********************************************/
 api.post('/yay', function (req, res) {
   res.header('Access-Control-Allow-Origin', '*')
@@ -136,6 +136,7 @@ api.post('/yay', function (req, res) {
     "text": "Wonderful! Let's send a gift to Beth. How about this?",
     "attachments": [
         {
+          "callback_id": "choose_prize",
           "fallback": "Required plain-text summary of the attachment.",
           "color": "#59FFBA",
           // "pretext": "Wonderful! Let's send a gift to Beth. How about this?",
@@ -149,14 +150,14 @@ api.post('/yay', function (req, res) {
           // "ts": 123456789,
           "actions": [
             {
-                "name": "Yes",
+                "name": "did_choose_prize",
                 "text": "Yes, that's perfect!",
                 "type": "button",
                 "style": "primary",
                 "value": "true"
             },
             {
-                "name": "No",
+                "name": "did_choose_prize",
                 "text": "No, try again",
                 "type": "button",
                 "value": "false"
@@ -174,4 +175,23 @@ api.post('/yay', function (req, res) {
   }
 
   res.send(messageBlock)
+})
+
+/* *******************************************
+    MESSAGE BUTTON HANDLER
+*********************************************/
+// Parse application/x-www-form-urlencoded
+let bodyParser = require('body-parser')
+api.use(bodyParser.urlencoded({ extended: false }))
+api.post('/yay-message-buttons', function (req, res) {
+  res.header('Access-Control-Allow-Origin', '*')
+  res.header('Access-Control-Allow-Headers', 'X-Requested-With, Content-Type, Origin, Accept')
+  res.header('Access-Control-Allow-Methods', 'Post, Get, Options')
+
+  // Make sure it's the right user/team
+  // if (req.body.token !== 'XH7s8DjEOHTBEyO6tOGKZx9Y') {
+  //   return false
+  // }
+  console.log(req.body.payload)
+  // res.send('yes')
 })
