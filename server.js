@@ -236,7 +236,7 @@ const products = [
     'image_url': 'https://res.cloudinary.com/hintsy/image/upload/v1478811724/expedition4_g0cnwk.jpg',
     'url': 'https://hintsygifts.com/shop/Field-Notes/Special-Edition-Notebooks',
     'price': 13,
-    'bot_text': 'Okay, tough crowd. How about this one?'
+    'bot_text': 'Wonderful! Let\'s find a gift for Beth Sharif.'
   },
   {
     'name': 'Golden Coast Soy Candle by P.F. Candle Co.',
@@ -245,7 +245,7 @@ const products = [
     'image_url': 'https://res.cloudinary.com/hintsy/image/upload/v1480701134/amberandmosscandle_xzgufv.jpg',
     'url': 'https://hintsygifts.com/shop/P.F.-Candle-Co./Soy-Candle',
     'price': 12,
-    'bot_text': 'Hmm. I\'m thinking this one might be a good fit!'
+    'bot_text': 'Okay, tough crowd. How about this one?'
   },
   {
     'name': 'QUIN + Union Wine Pinot Noir Lollipops',
@@ -278,7 +278,7 @@ function _returnNewPrize (index, products) {
   }
 
   const getNextPrize = {
-    'text': 'Okay, tough crowd. How about this one?',
+    'text': products[pointer].bot_text,
     'attachments': [
       {
         'callback_id': 'choose_prize',
