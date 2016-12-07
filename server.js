@@ -236,7 +236,7 @@ const products = [
     'image_url': 'https://res.cloudinary.com/hintsy/image/upload/v1478811724/expedition4_g0cnwk.jpg',
     'url': 'https://hintsygifts.com/shop/Field-Notes/Special-Edition-Notebooks',
     'price': 13,
-    'bot_text': 'Wonderful! Let\'s find a gift for Beth Sharif.'
+    'bot_text': 'Wonderful! Let\'s send a prize to Beth Sharif. How about this?'
   },
   {
     'name': 'Golden Coast Soy Candle by P.F. Candle Co.',
