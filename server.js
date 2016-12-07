@@ -33,10 +33,12 @@ function approveDomains (opts, certs, cb) {
   cb(null, { options: opts, certs: certs })
 }
 
+// Serve website
 app.get('/', function (req, res) {
   res.send('<a href="https://slack.com/oauth/authorize?scope=commands,bot,users:read&client_id=104436581472.112407214276"><img alt="Add to Slack" height="40" width="139" src="https://platform.slack-edge.com/img/add_to_slack.png" srcset="https://platform.slack-edge.com/img/add_to_slack.png 1x, https://platform.slack-edge.com/img/add_to_slack@2x.png 2x" /></a>')
 })
 
+// Create website servers
 http.createServer(lex.middleware(require('redirect-https')())).listen(80)
 https.createServer(lex.httpsOptions, lex.middleware(app)).listen(443)
 
@@ -47,6 +49,7 @@ https.createServer(lex.httpsOptions, lex.middleware(app)).listen(443)
 let admin = require('firebase-admin')
 
 admin.initializeApp({
+  // TODO: Scope this admin's permissions down to the bare minimum
   credential: admin.credential.cert('yay-app-12359-firebase-adminsdk-dsrhf-f7ffb3cda0.json'),
   databaseURL: 'https://yay-app-12359.firebaseio.com'
 })
@@ -61,15 +64,20 @@ ref.once('value', function (snapshot) {
   API ENDPOINTS
 *********************************************/
 
+// Create API server
 let api = express()
 https.createServer(lex.httpsOptions, lex.middleware(api)).listen(3000)
 
-// Create New Account. Handle OAuth redirect: grab the code that is returned when user approves Yay app, and exchange it with Slack API for real access tokens. Then save those tokens and all the account info to Firebase.
+/* *******************************************
+    CREATE NEW ACCOUNT
+*********************************************/
+// Handle OAuth redirect: grab the code that is returned when user approves Yay app, and exchange it with Slack API for real access tokens. Then save those tokens and all the account info to Firebase.
 api.get('/oauth-redirect', function (req, res) {
   res.header('Access-Control-Allow-Origin', '*')
   res.header('Access-Control-Allow-Headers', 'X-Requested-With, Content-Type, Origin, Accept')
   res.header('Access-Control-Allow-Methods', 'Post, Get, Options')
   if (req.query.error) {
+    // TODO: Handle error. Sentry system.
     res.send(req.query.error)
     return
   }
@@ -90,7 +98,7 @@ function _exchangeCodeForToken (codeRecieved) {
     }
   }, function (err, httpResponse, body) {
     if (err) {
-      // TODO: Handle error
+      // TODO: Handle error. Sentry system.
       return
     }
     // TODO: Handle success. Save to Firebase. Etc.
@@ -102,8 +110,8 @@ function _exchangeCodeForToken (codeRecieved) {
 function _saveNewSlackAccount (body) {
   // If we have an error, stop
   if (body.ok !== true) {
-    // NOTE: Error ocurred here.
-    console.log('body ok false')
+    // TODO: Error ocurred here. Sentry and handle.
+    console.log('error')
     return
   }
   let accounts = db.ref('/slack_accounts')
@@ -116,7 +124,15 @@ function _saveNewSlackAccount (body) {
     }
   })
   // Save the new team and data to Firebase
-  accounts.child(body.team_id).set(body, console.log('success?'))
+  accounts.child(body.team_id).set(body, function () {
+    console.log('success?')
+    _startSetupConversation(body.user_id)
+  })
+}
+
+// Begin setup conversation with user
+function _startSetupConversation (userID) {
+  // Using userID, start a bot conversation with that user
 }
 
 /* *******************************************
@@ -214,7 +230,9 @@ api.post('/yay-message-buttons', function (req, res) {
   console.log(data)
   // NOTE: From Slack docs: "Though presented as an array, at this time you'll only receive a single action per incoming invocation."
   if (data.actions[0].name === 'did_choose_prize') {
-    res.send('prize chosen')
+    // TODO: Write the purchase function. Note that this needs to return a promise and be awaited.
+    let getThisPrize = _purchaseThisPrize(data.actions[0].value, products)
+    res.send(getThisPrize)
   } else if (data.actions[0].name === 'choose_next_prize') {
     // This passes in the 'value' returned from the last button. This will be our new gift.
     let getNewPrize = _returnNewPrize(data.actions[0].value, products)
@@ -226,7 +244,7 @@ api.post('/yay-message-buttons', function (req, res) {
 })
 
 /* *******************************************
-    RETURN NEW PRIZE
+    METHOD: RETURN NEW PRIZE
 *********************************************/
 const products = [
   {
@@ -263,7 +281,7 @@ const products = [
     'image_url': 'https://res.cloudinary.com/hintsy/image/upload/v1478482952/mastalmond_r2jukq.jpg',
     'url': 'https://hintsygifts.com/shop/Mast-Brothers/Mast-Brothers-Signature-Chocolate-Bars',
     'price': 7,
-    'bot_text': 'Chocolate makes everyone happy. It\'s a fact'
+    'bot_text': 'Chocolate makes everyone happy. It\'s a scientific fact.'
   }
 ]
 
@@ -293,7 +311,8 @@ function _returnNewPrize (index, products) {
             'name': 'did_choose_prize',
             'text': 'Yay, that\'s perfect!',
             'type': 'button',
-            'style': 'primary'
+            'style': 'primary',
+            'value': pointer
           },
           {
             'name': 'choose_next_prize',
@@ -312,4 +331,23 @@ function _returnNewPrize (index, products) {
     ]
   }
   return getNextPrize
+}
+
+/* *******************************************
+    METHOD: PURCHASE THIS PRIZE
+*********************************************/
+function _purchaseThisPrize (index, products) {
+  // If we don't have a value, return an error. Something went wrong. TODO: Sentry report here.
+  if (!index) {
+    return
+  }
+
+  // This prize was selected
+  let selectedPrize = products[index]
+
+  // Place the order
+  let _placeOrder = function (price, stripe) {
+    let chargeAmount = selectedPrize.price * 100
+    let stripeID = 'id here' // TODO: Stripe ID
+  }
 }
