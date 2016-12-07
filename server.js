@@ -137,8 +137,15 @@ api.post('/yay', function (req, res) {
 
   let data = req.body
 
-  // Step 1: TODO: Parse the user name out of the req.body.text field. Use a regex pattern to grab from @string. For now, just grabbing entire text body
-  // const recipient = data.text
+  // Step 1: Parse the user name out of the req.body.text field. Use a regex pattern to grab from @string. For now, just grabbing entire text body
+  const returnUserName = function (text) {
+    const recipient = text
+    const pattern = /\B@[a-z0-9_-]+/gi
+    const userName = recipient.match(pattern)
+    return userName[0].substr(1)
+  }
+  const thisUserName = returnUserName(data.text)
+  console.log(thisUserName)
 
   // Step 2: Get "access_token" from Firebase with "data.team_id"
   let accounts = db.ref('/slack_accounts/' + data.team_id)
@@ -161,11 +168,18 @@ api.post('/yay', function (req, res) {
         return
       }
       // TODO: Step 4 here
-      console.log(JSON.parse(body))
+      _getRecipientInfo(thisUserName, JSON.parse(body).members)
     })
   }
 
   // Step 4: TODO: Parse through member list to find member with "name" that equals handle we've parsed out of text
+  function _getRecipientInfo (userName, userList) {
+    for (var i = 0; i < userList.length; i++) {
+      if (userList[i].name === userName) {
+        console.log('This is our user:', userList[i].real_name)
+      }
+    }
+  }
 
   // Example request body in "req.body"
   // { token: 'ERJo2Nrv9AE5fULeYegRHIWS',
@@ -179,41 +193,9 @@ api.post('/yay', function (req, res) {
   //   text: '@jake',
   //   response_url: 'https://hooks.slack.com/commands/T32CUH3DW/113315981924/7KqhP2GqmwhQVs5ebFcflCvY' }
 
-  var messageBlock = {
-    'text': 'Wonderful! Let\'s send a prize to @hintsybeth. How about this?',
-    'attachments': [
-      {
-        'callback_id': 'choose_prize',
-        'fallback': 'Required plain-text summary of the attachment.',
-        'color': '#59FFBA',
-        'title': 'Golden Coast Soy Candle by P.F. Candle Co.',
-        'title_link': 'https://hintsygifts.com/shop/P.F.-Candle-Co./Soy-Candle',
-        'text': '$18 | Hand poured in a sunny studio in LA\'s Arts District.',
-        'image_url': 'https://res.cloudinary.com/hintsy/image/upload/v1480701134/amberandmosscandle_xzgufv.jpg',
-        'actions': [
-          {
-            'name': 'did_choose_prize',
-            'text': 'Yay, that\'s perfect!',
-            'type': 'button',
-            'style': 'primary'
-          },
-          {
-            'name': 'choose_next_prize',
-            'text': 'No, try again',
-            'type': 'button'
-          },
-          {
-            'name': 'cancel',
-            'text': 'Cancel',
-            'style': 'danger',
-            'type': 'button'
-          }
-        ]
-      }
-    ]
-  }
-
-  res.send(messageBlock)
+  // Use method to get a prize and return it to Slack.
+  let getNewPrize = _returnNewPrize(-1, products)
+  res.send(getNewPrize)
 })
 
 /* *******************************************
@@ -234,42 +216,100 @@ api.post('/yay-message-buttons', function (req, res) {
   if (data.actions[0].name === 'did_choose_prize') {
     res.send('prize chosen')
   } else if (data.actions[0].name === 'choose_next_prize') {
-    let differentPrize = {
-      'text': 'Okay, tough crowd. How about this one?',
-      'attachments': [
-        {
-          'callback_id': 'choose_prize',
-          'fallback': 'Required plain-text summary of the attachment.',
-          'color': '#59FFBA',
-          'title': 'Special Edition Notebooks by Field Notes',
-          'title_link': 'https://hintsygifts.com/shop/Field-Notes/Special-Edition-Notebooks',
-          'text': '$13 | Waterproof and tear-proof, this paper will survive the rough and tumble of your journeys.',
-          'image_url': 'https://res.cloudinary.com/hintsy/image/upload/v1477860719/expedition1_vg9s9f.jpg',
-          'actions': [
-            {
-              'name': 'did_choose_prize',
-              'text': 'Yay, that\'s perfect!',
-              'type': 'button',
-              'style': 'primary'
-            },
-            {
-              'name': 'choose_next_prize',
-              'text': 'No, try again',
-              'type': 'button'
-            },
-            {
-              'name': 'cancel',
-              'text': 'Cancel',
-              'style': 'danger',
-              'type': 'button'
-            }
-          ]
-        }
-      ]
-    }
-    res.send(differentPrize)
+    // This passes in the 'value' returned from the last button. This will be our new gift.
+    let getNewPrize = _returnNewPrize(data.actions[0].value, products)
+    res.send(getNewPrize)
   } else if (data.actions[0].name === 'cancel') {
-    res.send('canceled prize')
+    res.send('😘 Okay, we\'ll figure it out later.')
   }
   // res.send('yes')
 })
+
+/* *******************************************
+    RETURN NEW PRIZE
+*********************************************/
+const products = [
+  {
+    'name': 'Special Edition Expedition Notebooks',
+    'brand': 'Field Notes',
+    'description': 'Waterproof and tear-proof, this paper will survive the rough and tumble of your journeys.',
+    'image_url': 'https://res.cloudinary.com/hintsy/image/upload/v1478811724/expedition4_g0cnwk.jpg',
+    'url': 'https://hintsygifts.com/shop/Field-Notes/Special-Edition-Notebooks',
+    'price': 13,
+    'bot_text': 'Okay, tough crowd. How about this one?'
+  },
+  {
+    'name': 'Golden Coast Soy Candle by P.F. Candle Co.',
+    'brand': 'P.F. Candle Co.',
+    'description': 'Hand poured in a sunny studio in LA\'s Arts District',
+    'image_url': 'https://res.cloudinary.com/hintsy/image/upload/v1480701134/amberandmosscandle_xzgufv.jpg',
+    'url': 'https://hintsygifts.com/shop/P.F.-Candle-Co./Soy-Candle',
+    'price': 12,
+    'bot_text': 'Hmm. I\'m thinking this one might be a good fit!'
+  },
+  {
+    'name': 'QUIN + Union Wine Pinot Noir Lollipops',
+    'brand': 'QUIN',
+    'description': 'Union makes the wine and QUIN turns it in to candy. Pretty cool!',
+    'image_url': 'https://res.cloudinary.com/hintsy/image/upload/v1477422335/Quin_Candy_Pinot_Noir_Lollipops_Hand_made_in_Portland_OR_1_of_1_jugwbr.jpg',
+    'url': 'https://hintsygifts.com/shop/QUIN/QUIN-+-Union-Wine-Pinot-Noir-Lollipops',
+    'price': 7,
+    'bot_text': 'Okay, okay. This should work—everybody loves candy!'
+  },
+  {
+    'name': 'Almond Butter Chocolate Bar',
+    'brand': 'Mast Brothers',
+    'description': 'Obsessive attention to detail, wonderful craftsmanship, and inspirational simplicity. ',
+    'image_url': 'https://res.cloudinary.com/hintsy/image/upload/v1478482952/mastalmond_r2jukq.jpg',
+    'url': 'https://hintsygifts.com/shop/Mast-Brothers/Mast-Brothers-Signature-Chocolate-Bars',
+    'price': 7,
+    'bot_text': 'Chocolate makes everyone happy. It\'s a fact'
+  }
+]
+
+function _returnNewPrize (index, products) {
+  // Use the index to know which product to return
+  let pointer = parseInt(index) || 0
+  pointer++
+
+  // If we've reached the end of the products, start over at 0.
+  if (!products[pointer]) {
+    pointer = 0
+  }
+
+  const getNextPrize = {
+    'text': 'Okay, tough crowd. How about this one?',
+    'attachments': [
+      {
+        'callback_id': 'choose_prize',
+        'fallback': 'Required plain-text summary of the attachment.',
+        'color': '#59FFBA',
+        'title': products[pointer].name,
+        'title_link': products[pointer].url,
+        'text': '$' + products[pointer].price + ' | ' + products[pointer].description,
+        'image_url': products[pointer].image_url,
+        'actions': [
+          {
+            'name': 'did_choose_prize',
+            'text': 'Yay, that\'s perfect!',
+            'type': 'button',
+            'style': 'primary'
+          },
+          {
+            'name': 'choose_next_prize',
+            'text': 'No, try again',
+            'type': 'button',
+            'value': pointer
+          },
+          {
+            'name': 'cancel',
+            'text': 'Cancel',
+            'style': 'danger',
+            'type': 'button'
+          }
+        ]
+      }
+    ]
+  }
+  return getNextPrize
+}
