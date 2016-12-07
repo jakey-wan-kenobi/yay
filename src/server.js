@@ -1,8 +1,8 @@
-let express = require('express')
+import express from 'express'
+import https from 'https'
+import http from 'http'
+import request from 'request'
 let app = express()
-let https = require('https')
-let http = require('http')
-let request = require('request')
 
 /* *******************************************
   LETS-ENCRYPT SSL SETUP
@@ -47,7 +47,7 @@ https.createServer(lex.httpsOptions, lex.middleware(app)).listen(443)
 let admin = require('firebase-admin')
 
 admin.initializeApp({
-  credential: admin.credential.cert('yay-app-12359-firebase-adminsdk-dsrhf-f7ffb3cda0.json'),
+  credential: admin.credential.cert('./yay-app-12359-firebase-adminsdk-dsrhf-f7ffb3cda0.json'),
   databaseURL: 'https://yay-app-12359.firebaseio.com'
 })
 
