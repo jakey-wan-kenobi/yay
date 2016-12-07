@@ -17,5 +17,7 @@
     "pm2": "^2.1.6",
     "request": "^2.79.0"
   },
-  "devDependencies": {}
+  "devDependencies": {
+    "nodemon": "^1.11.0"
+  }
 }
