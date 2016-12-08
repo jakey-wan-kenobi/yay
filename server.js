@@ -148,18 +148,56 @@ function _startSetupConversation (userID, authToken) {
   }).catch(function (error) {
     console.log(error)
   })
+}
 
-  function _sendFirstMessage (channelID, authToken) {
-    axios.post('https://slack.com/api/chat.postMessage', qs.stringify({
-      token: authToken,
-      channel: channelID,
-      text: 'Hi! Lets set this shit up!'
-    })).then(function (response) {
-      console.log(response)
-    }).catch(function (error) {
-      console.log(error)
-    })
-  }
+// This sends a message to the Slack user who installed the app, so we can finish the setup.
+function _sendFirstMessage (channelID, authToken) {
+  axios.post('https://slack.com/api/chat.postMessage', qs.stringify({
+    token: authToken,
+    channel: channelID,
+    text: 'Hi! Lets set this shit up!'
+  })).then(function (response) {
+    _startSlackBot(authToken)
+  }).catch(function (error) {
+    console.log(error)
+  })
+}
+
+// This opens a websock connection for the bot, so she can listen on every channel she's invited to (and determine when to interact with people)
+function _startSlackBot (authToken) {
+  let SlackBot = require('slackbots')
+  let bot = new SlackBot({
+    token: authToken
+  })
+  bot.on('start', function () {
+    console.log('hello world!')
+  })
+  bot.on('message', function (data) {
+    console.log(data)
+  })
+}
+
+  // Start websockets listening for bot
+  // function _openWebSocket (authToken) {
+  //   let WebSocket = require('ws')
+  //   let headers = {
+  //     'token': authToken,
+  //     'simple_latest': true,
+  //     'no_unreads': true
+  //   }
+  //   let ws = new WebSocket('https://slack.com/api/rtm.start', {headers})
+  //
+  //   ws.on('open', function open () {
+  //     // ws.send('something')
+  //     console.log('SOCKET open')
+  //   })
+  //
+  //   ws.on('message', function (data, flags) {
+  //     // flags.binary will be set if a binary data is received.
+  //     // flags.masked will be set if the data was masked.
+  //     console.log(data)
+  //   })
+  // }
 
   // Using userID, start a bot conversation with that user
   // HERE
@@ -173,7 +211,6 @@ function _startSetupConversation (userID, authToken) {
   // }).catch(function (error) {
   //   console.log('error!', error)
   // })
-}
 
 /* *******************************************
     YAY SLASH COMMAND

@@ -15,7 +15,8 @@
     "firebase-admin": "^4.0.3",
     "letsencrypt-express": "^2.0.5",
     "pm2": "^2.1.6",
-    "request": "^2.79.0"
+    "request": "^2.79.0",
+    "slackbots": "^0.5.3"
   },
   "devDependencies": {
     "nodemon": "^1.11.0"
