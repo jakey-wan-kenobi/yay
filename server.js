@@ -125,14 +125,54 @@ function _saveNewSlackAccount (body) {
   })
   // Save the new team and data to Firebase
   accounts.child(body.team_id).set(body, function () {
-    console.log('success?')
-    _startSetupConversation(body.user_id)
+    _startSetupConversation(body.user_id, body.bot.bot_access_token)
   })
 }
 
 // Begin setup conversation with user
-function _startSetupConversation (userID) {
+let axios = require('axios')
+let qs = require('querystring')
+function _startSetupConversation (userID, authToken) {
+  console.log('AUTH', authToken)
+  // List channel ids that bot has access to
+  axios.post('https://slack.com/api/im.list', qs.stringify({
+    token: authToken
+  })).then(function (response) {
+    let ims = response.data.ims
+    for (let i = 0; i < ims.length; i++) {
+      if (ims[i].user === userID) {
+        console.log('this is the convo we target', ims[i])
+        _sendFirstMessage(ims[i].id, authToken)
+      }
+    }
+  }).catch(function (error) {
+    console.log(error)
+  })
+
+  function _sendFirstMessage (channelID, authToken) {
+    axios.post('https://slack.com/api/chat.postMessage', qs.stringify({
+      token: authToken,
+      channel: channelID,
+      text: 'Hi! Lets set this shit up!'
+    })).then(function (response) {
+      console.log(response)
+    }).catch(function (error) {
+      console.log(error)
+    })
+  }
+
   // Using userID, start a bot conversation with that user
+  // HERE
+  // axios.post('https://slack.com/api/im.open', {
+  //   token: authToken,
+  //   channel: '@jake',
+  //   text: 'hello world!',
+  //   as_user: false
+  // }).then(function (response) {
+  //   console.log('response!', response)
+  // }).catch(function (error) {
+  //   console.log('error!', error)
+  // })
 }
 
 /* *******************************************
