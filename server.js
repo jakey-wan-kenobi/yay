@@ -38,6 +38,20 @@ app.get('/', function (req, res) {
   res.send('<a href="https://slack.com/oauth/authorize?scope=commands,bot,users:read&client_id=104436581472.112407214276"><img alt="Add to Slack" height="40" width="139" src="https://platform.slack-edge.com/img/add_to_slack.png" srcset="https://platform.slack-edge.com/img/add_to_slack.png 1x, https://platform.slack-edge.com/img/add_to_slack@2x.png 2x" /></a>')
 })
 
+let fs = require('fs')
+let dot = require('dot')
+app.get('/account', function (req, res) {
+  fs.readFile('views/account.html', function (error, html) {
+    if (error) {
+      // TODO: Handle error
+      return
+    }
+    let templateFn = dot.template(html)
+    let compiledTmp = templateFn()
+    res.send(compiledTmp)
+  })
+})
+
 // Create website servers
 http.createServer(lex.middleware(require('redirect-https')())).listen(80)
 https.createServer(lex.httpsOptions, lex.middleware(app)).listen(443)
@@ -83,6 +97,9 @@ api.get('/oauth-redirect', function (req, res) {
   }
   // TODO: Verify that req.query.state matches the unique state of the user (still tbd) and then exchange the req.query.code for an access token as specified here: https://api.slack.com/methods/oauth.access
   _exchangeCodeForToken(req.query.code)
+
+  // Once all the work is done, redirect user to success postMessage
+  res.redirect('https://yay.hintsy.io')
 })
 
 // Exchange the Slack code for an access token (see here: https://api.slack.com/methods/oauth.access)
