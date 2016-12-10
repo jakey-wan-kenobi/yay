@@ -6,3 +6,5 @@ src/yay-app-12359-firebase-adminsdk-dsrhf-f7ffb3cda0.json
 dist/server.js
 
 dist/server.js
+
+.env

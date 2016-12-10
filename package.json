@@ -12,6 +12,7 @@
     "axios": "^0.15.3",
     "body-parser": "^1.15.2",
     "dot": "^1.1.1",
+    "dotenv": "^2.0.0",
     "express": "^4.14.0",
     "firebase-admin": "^4.0.3",
     "letsencrypt-express": "^2.0.5",

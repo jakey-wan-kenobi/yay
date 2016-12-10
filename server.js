@@ -3,6 +3,8 @@ let app = express()
 let https = require('https')
 let http = require('http')
 let request = require('request')
+// Adds env variables from process.env to "process.env" object
+require('dotenv').config()
 
 /* *******************************************
   LETS-ENCRYPT SSL SETUP
@@ -107,9 +109,8 @@ function _exchangeCodeForToken (codeRecieved) {
   request.post({
     url: 'https://slack.com/api/oauth.access',
     form: {
-      client_id: '104436581472.112407214276',
-      // TODO: Put this in an .env file
-      client_secret: '116f4ab5fe3b5d2b1be59bff4a2010e6',
+      client_id: process.env.SLACK_CLIENT_ID,
+      client_secret: process.env.SLACK_CLIENT_SECRET,
       code: codeRecieved
       // redirect_uri: 'https://yay.hintsy.io/oauth-redirect'
     }
@@ -236,7 +237,6 @@ api.post('/yay', function (req, res) {
     request.post({
       url: 'https://slack.com/api/users.list',
       form: {
-        // TODO: Put this in an .env file
         token: access_token
       }
     }, function (err, httpResponse, body) {
@@ -397,6 +397,7 @@ function _returnNewPrize (index, products) {
 /* *******************************************
     METHOD: PURCHASE THIS PRIZE
 *********************************************/
+let stripe_key = process.env.TEST_STRIPE_KEY
 function _purchaseThisPrize (index, products) {
   // If we don't have a value, return an error. Something went wrong. TODO: Sentry report here.
   if (!index) {
