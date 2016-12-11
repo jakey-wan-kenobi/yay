@@ -3,6 +3,7 @@ let app = express()
 let https = require('https')
 let http = require('http')
 let request = require('request')
+let axios = require('axios')
 // Adds env variables from process.env to "process.env" object
 require('dotenv').config()
 
@@ -85,6 +86,28 @@ let api = express()
 https.createServer(lex.httpsOptions, lex.middleware(api)).listen(3000)
 
 /* *******************************************
+    TESTING CO TODO Remove this for production
+*********************************************/
+let co = require('co')
+api.post('/async', function (req, res) {
+  res.header('Access-Control-Allow-Origin', '*')
+  res.header('Access-Control-Allow-Headers', 'X-Requested-With, Content-Type, Origin, Accept')
+  res.header('Access-Control-Allow-Methods', 'Post, Get, Options')
+  co(function * () {
+    // yield any promise
+    // let result = yield Promise.resolve(true)
+    const result = yield axios.get('https://jsonplaceholder.typicode.com/posts/900').catch(function (error) {
+      console.log(error)
+      res.send(400)
+    })
+    res.send(result.data)
+  }).catch(onError)
+  function onError (err) {
+    console.log(err)
+  }
+})
+
+/* *******************************************
     AUTH: CREATE NEW ACCOUNT OR SIGN IN
 *********************************************/
 // Handle OAuth redirect: grab the code that is returned when user approves Yay app, and exchange it with Slack API for real access tokens. Then save those tokens and all the account info to Firebase.
@@ -151,7 +174,6 @@ function _saveNewSlackAccountOrSignIn (body) {
 }
 
 // Begin setup conversation with user
-let axios = require('axios')
 let qs = require('querystring')
 function _startSetupConversation (userID, authToken) {
   console.log('AUTH', authToken)
