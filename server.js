@@ -85,10 +85,10 @@ let api = express()
 https.createServer(lex.httpsOptions, lex.middleware(api)).listen(3000)
 
 /* *******************************************
-    CREATE NEW ACCOUNT
+    AUTH: CREATE NEW ACCOUNT OR SIGN IN
 *********************************************/
 // Handle OAuth redirect: grab the code that is returned when user approves Yay app, and exchange it with Slack API for real access tokens. Then save those tokens and all the account info to Firebase.
-api.get('/oauth-redirect', function (req, res) {
+api.get('/auth', function (req, res) {
   res.header('Access-Control-Allow-Origin', '*')
   res.header('Access-Control-Allow-Headers', 'X-Requested-With, Content-Type, Origin, Accept')
   res.header('Access-Control-Allow-Methods', 'Post, Get, Options')
@@ -97,10 +97,8 @@ api.get('/oauth-redirect', function (req, res) {
     res.send(req.query.error)
     return
   }
-  // TODO: Verify that req.query.state matches the unique state of the user (still tbd) and then exchange the req.query.code for an access token as specified here: https://api.slack.com/methods/oauth.access
   _exchangeCodeForToken(req.query.code)
-
-  // TODO: Only do this once all the work is done, redirect user to success postMessage
+  // TODO Once all the work is done, redirect user to account/success page (depending on whether account was just created or they're returning)
   res.redirect('https://yay.hintsy.io')
 })
 
@@ -135,12 +133,11 @@ function _saveNewSlackAccountOrSignIn (body) {
   let accounts = db.ref('/slack_accounts')
   // Check whether team already exists in our Firebase
   accounts.once('value').then(function (snapshot) {
-    // Decide what to do, depending on whether we're using "Sign in With Slack" or "Authorize"
-    // NOTE Team ID is different from body.team_id that is returned when user has clicked the Add to Slack button rather than the Sign in with Slack button)
+    // Decide what to do, depending on whether we're using "Sign in With Slack" or "Add to Slack". NOTE Team ID is different from body.team_id that is returned when user has clicked the Add to Slack button rather than the Sign in with Slack button)
     let teamID = body.team_id || body.team.id
     if (snapshot.child(teamID).exists()) {
       console.log('this team exists')
-      // TODO: This team already exists, and they are CONFIRMED authed at this point (RIGHT?). At this point, we can use the body.team.id to grab their info stored in Firebase, and send them to their account page
+      // TODO: This team already exists, and they are CONFIRMED authed at this point (RIGHT?). At this point, we can use the body.team.id to grab their info stored in Firebase
       return false
     }
     // Save the new team and data to Firebase if it doens't already exist
