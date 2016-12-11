@@ -37,7 +37,7 @@ function approveDomains (opts, certs, cb) {
 
 // Serve website
 app.get('/', function (req, res) {
-  res.send('<a href="https://slack.com/oauth/authorize?scope=commands,bot,users:read&client_id=104436581472.112407214276"><img alt="Add to Slack" height="40" width="139" src="https://platform.slack-edge.com/img/add_to_slack.png" srcset="https://platform.slack-edge.com/img/add_to_slack.png 1x, https://platform.slack-edge.com/img/add_to_slack@2x.png 2x" /></a>')
+  res.send('<a href="https://slack.com/oauth/authorize?scope=commands,bot,users:read&client_id=104436581472.112407214276"><img alt="Add to Slack" height="40" width="139" src="https://platform.slack-edge.com/img/add_to_slack.png" srcset="https://platform.slack-edge.com/img/add_to_slack.png 1x, https://platform.slack-edge.com/img/add_to_slack@2x.png 2x" /></a><a href="https://slack.com/oauth/authorize?scope=identity.basic&client_id=104436581472.112407214276"><img alt="Sign in with Slack" src="https://api.slack.com/img/sign_in_with_slack.png" /></a>')
 })
 
 let fs = require('fs')
@@ -100,7 +100,7 @@ api.get('/oauth-redirect', function (req, res) {
   // TODO: Verify that req.query.state matches the unique state of the user (still tbd) and then exchange the req.query.code for an access token as specified here: https://api.slack.com/methods/oauth.access
   _exchangeCodeForToken(req.query.code)
 
-  // Once all the work is done, redirect user to success postMessage
+  // TODO: Only do this once all the work is done, redirect user to success postMessage
   res.redirect('https://yay.hintsy.io')
 })
 
@@ -120,12 +120,12 @@ function _exchangeCodeForToken (codeRecieved) {
       return
     }
     // TODO: Handle success. Save to Firebase. Etc.
-    _saveNewSlackAccount(JSON.parse(body))
+    _saveNewSlackAccountOrSignIn(JSON.parse(body))
   })
 }
 
 // Save the data received from Slack to Firebase
-function _saveNewSlackAccount (body) {
+function _saveNewSlackAccountOrSignIn (body) {
   // If we have an error, stop
   if (body.ok !== true) {
     // TODO: Error ocurred here. Sentry and handle.
@@ -135,15 +135,21 @@ function _saveNewSlackAccount (body) {
   let accounts = db.ref('/slack_accounts')
   // Check whether team already exists in our Firebase
   accounts.once('value').then(function (snapshot) {
-    if (snapshot.child(body.team_id).exists()) {
+    // Decide what to do, depending on whether we're using "Sign in With Slack" or "Authorize"
+    // NOTE Team ID is different from body.team_id that is returned when user has clicked the Add to Slack button rather than the Sign in with Slack button)
+    let teamID = body.team_id || body.team.id
+    if (snapshot.child(teamID).exists()) {
       console.log('this team exists')
-      // TODO: This team already exists -- what do we want to do now?
-      // return
+      // TODO: This team already exists, and they are CONFIRMED authed at this point (RIGHT?). At this point, we can use the body.team.id to grab their info stored in Firebase, and send them to their account page
+      return false
     }
-  })
-  // Save the new team and data to Firebase
-  accounts.child(body.team_id).set(body, function () {
-    _startSetupConversation(body.user_id, body.bot.bot_access_token)
+    // Save the new team and data to Firebase if it doens't already exist
+    accounts.child(teamID).set(body, function () {
+      console.log('saving account')
+      _startSetupConversation(body.user_id, body.bot.bot_access_token)
+    })
+  }).catch(function (error) {
+    console.log(error)
   })
 }
 
