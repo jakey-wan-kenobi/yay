@@ -125,8 +125,8 @@ app.get('/auth', function (req, res) {
     let result = yield _exchangeCodeForToken(req.query.code)
     // Save the new token to Firebase, or sign the user in if already exists
     let nextResult = yield _saveNewSlackAccountOrSignIn(result.data)
-    // Route user to account and/or sucess page (regardless of new account or not)
-    res.redirect('https://yay.hintsy.io/auth/' + nextResult.team_id || nextResult.team.id)
+    // Route user to account and/or sucess page (regardless of new account or not). TODO: Load Vue app here, and send user info along with it. Explore server side rendering here.
+    res.redirect('https://yay.hintsy.io/account/' + nextResult.team_id || nextResult.team.id)
     // If this is a new account, proceed with bot setup
     if (nextResult.new_account) {
       _findSetupConversation(nextResult.user_id, nextResult.bot.bot_access_token)
