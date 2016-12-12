@@ -260,7 +260,7 @@ api.post('/yay', function (req, res) {
   if (data.text.indexOf('help') > -1) {
     console.log('help slashy')
     // TODO: Return help message
-    res.send('*I shall help you!* Here\'s all the cool stuff I can do for you: \n`/yay @user` To send an amazing prize to a teammate. \n`/yay account` To view your account usage & edit your payment or shipping details.  \n`/yay help` To...well, you already know what that does.')
+    res.send('*Weeeeee!* Here\'s all the cool tricks I can do: \n`/yay @user` To send an amazing prize to a teammate. \n`/yay account` To view your account usage & edit your payment or shipping details.  \n`/yay help` To...well, you already know what that does.')
     return
   }
 
