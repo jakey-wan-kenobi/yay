@@ -111,7 +111,7 @@ api.post('/async', function (req, res) {
     AUTH: CREATE NEW ACCOUNT OR SIGN IN
 *********************************************/
 // Handle OAuth redirect: grab the code that is returned when user approves Yay app, and exchange it with Slack API for real access tokens. Then save those tokens and all the account info to Firebase.
-api.get('/auth', function (req, res) {
+app.get('/auth', function (req, res) {
   res.header('Access-Control-Allow-Origin', '*')
   res.header('Access-Control-Allow-Headers', 'X-Requested-With, Content-Type, Origin, Accept')
   res.header('Access-Control-Allow-Methods', 'Post, Get, Options')
@@ -126,7 +126,7 @@ api.get('/auth', function (req, res) {
     // Save the new token to Firebase, or sign the user in if already exists
     let nextResult = yield _saveNewSlackAccountOrSignIn(result.data)
     // Route user to account and/or sucess page (regardless of new account or not)
-    res.redirect('https://yay.hintsy.io/account')
+    res.redirect('https://yay.hintsy.io/auth/' + nextResult.team_id || nextResult.team.id)
     // If this is a new account, proceed with bot setup
     if (nextResult.new_account) {
       _findSetupConversation(nextResult.user_id, nextResult.bot.bot_access_token)
@@ -156,7 +156,7 @@ function _saveNewSlackAccountOrSignIn (body) {
     // If we have an error, stop
     if (body.ok !== true) {
       // TODO: Error ocurred here. Sentry and handle.
-      console.log('error')
+      console.log('error a:', body)
       return
     }
     let accounts = db.ref('/slack_accounts')
