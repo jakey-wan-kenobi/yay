@@ -38,7 +38,7 @@ function approveDomains (opts, certs, cb) {
 
 // Serve website
 app.get('/', function (req, res) {
-  res.send('<a href="https://slack.com/oauth/authorize?scope=commands,bot,users:read&client_id=104436581472.112407214276"><img alt="Add to Slack" height="40" width="139" src="https://platform.slack-edge.com/img/add_to_slack.png" srcset="https://platform.slack-edge.com/img/add_to_slack.png 1x, https://platform.slack-edge.com/img/add_to_slack@2x.png 2x" /></a><a href="https://slack.com/oauth/authorize?scope=identity.basic&client_id=104436581472.112407214276"><img alt="Sign in with Slack" src="https://api.slack.com/img/sign_in_with_slack.png" /></a>')
+  res.send('<a href="https://slack.com/oauth/authorize?scope=commands,bot,users:read&client_id=104436581472.112407214276"><img alt="Add to Slack" height="40" width="139" src="https://platform.slack-edge.com/img/add_to_slack.png" srcset="https://platform.slack-edge.com/img/add_to_slack.png 1x, https://platform.slack-edge.com/img/add_to_slack@2x.png 2x" /></a><a href="https://slack.com/oauth/authorize?scope=identity.basic&client_id=104436581472.112407214276"><img alt="Sign in with Slack" src="https://api.slack.com/img/sign_in_with_slack.png" srcset="https://platform.slack-edge.com/img/sign_in_with_slack.png 1x, https://platform.slack-edge.com/img/sign_in_with_slack@2x.png 2x"/></a>')
 })
 
 let fs = require('fs')
@@ -256,6 +256,20 @@ api.post('/yay', function (req, res) {
   // }
 
   let data = req.body
+  // Handle 'help' Slash command
+  if (data.text.indexOf('help') > -1) {
+    console.log('help slashy')
+    // TODO: Return help message
+    res.send('*I shall help you!* Here\'s all the cool stuff I can do for you: \n`/yay @user` To send an amazing prize to a teammate. \n`/yay account` To view your account usage & edit your payment or shipping details.  \n`/yay help` To...well, you already know what that does.')
+    return
+  }
+
+  if (data.text.indexOf('account') > -1) {
+    console.log('account slashy')
+    // TODO: Return account link
+    res.send('Go here to edit & view your account details: https://yay.hintsy.io/account/' + data.team_id)
+    return
+  }
 
   // Step 1: Parse the user name out of the req.body.text field. Use a regex pattern to grab from @string. For now, just grabbing entire text body
   const returnUserName = function (text) {
