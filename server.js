@@ -120,63 +120,79 @@ api.get('/auth', function (req, res) {
     res.send(req.query.error)
     return
   }
-  _exchangeCodeForToken(req.query.code)
-  // TODO Once all the work is done, redirect user to account/success page (depending on whether account was just created or they're returning)
-  res.redirect('https://yay.hintsy.io')
+  co(function * () {
+    // Exchange the code for a token
+    let result = yield _exchangeCodeForToken(req.query.code)
+    // Save the new token to Firebase, or sign the user in if already exists
+    let nextResult = yield _saveNewSlackAccountOrSignIn(result.data)
+    // Route user to account and/or sucess page (regardless of new account or not)
+    res.redirect('https://yay.hintsy.io/account')
+    // If this is a new account, proceed with bot setup
+    if (nextResult.new_account) {
+      _findSetupConversation(nextResult.user_id, nextResult.bot.bot_access_token)
+    }
+  }).catch(function (err) {
+    // Route user to error page
+    console.log(err)
+  })
 })
 
-// Exchange the Slack code for an access token (see here: https://api.slack.com/methods/oauth.access)
+// PROMISE: Exchange the Slack code for an access token (see here: https://api.slack.com/methods/oauth.access)
 function _exchangeCodeForToken (codeRecieved) {
-  request.post({
-    url: 'https://slack.com/api/oauth.access',
-    form: {
-      client_id: process.env.SLACK_CLIENT_ID,
-      client_secret: process.env.SLACK_CLIENT_SECRET,
-      code: codeRecieved
-      // redirect_uri: 'https://yay.hintsy.io/oauth-redirect'
-    }
-  }, function (err, httpResponse, body) {
-    if (err) {
-      // TODO: Handle error. Sentry system.
-      return
-    }
-    // TODO: Handle success. Save to Firebase. Etc.
-    _saveNewSlackAccountOrSignIn(JSON.parse(body))
-  })
-}
-
-// Save the data received from Slack to Firebase
-function _saveNewSlackAccountOrSignIn (body) {
-  // If we have an error, stop
-  if (body.ok !== true) {
-    // TODO: Error ocurred here. Sentry and handle.
-    console.log('error')
-    return
-  }
-  let accounts = db.ref('/slack_accounts')
-  // Check whether team already exists in our Firebase
-  accounts.once('value').then(function (snapshot) {
-    // Decide what to do, depending on whether we're using "Sign in With Slack" or "Add to Slack". NOTE Team ID is different from body.team_id that is returned when user has clicked the Add to Slack button rather than the Sign in with Slack button)
-    let teamID = body.team_id || body.team.id
-    if (snapshot.child(teamID).exists()) {
-      console.log('this team exists')
-      // TODO: This team already exists, and they are CONFIRMED authed at this point (RIGHT?). At this point, we can use the body.team.id to grab their info stored in Firebase
-      return false
-    }
-    // Save the new team and data to Firebase if it doens't already exist
-    accounts.child(teamID).set(body, function () {
-      console.log('saving account')
-      _startSetupConversation(body.user_id, body.bot.bot_access_token)
-    })
-  }).catch(function (error) {
+  let response = axios.post('https://slack.com/api/oauth.access', qs.stringify({
+    client_id: process.env.SLACK_CLIENT_ID,
+    client_secret: process.env.SLACK_CLIENT_SECRET,
+    code: codeRecieved
+  })).catch(function (error) {
+    // TODO: Handle error
     console.log(error)
   })
+  return response
+}
+
+// PROMISE: Save the data received from Slack to Firebase
+function _saveNewSlackAccountOrSignIn (body) {
+  let response = new Promise(function (resolve, reject) {
+    // If we have an error, stop
+    if (body.ok !== true) {
+      // TODO: Error ocurred here. Sentry and handle.
+      console.log('error')
+      return
+    }
+    let accounts = db.ref('/slack_accounts')
+    // Check whether team already exists in our Firebase
+    accounts.once('value').then(function (snapshot) {
+      // Decide what to do, depending on whether we're using "Sign in With Slack" or "Add to Slack". NOTE Team ID is different from body.team_id that is returned when user has clicked the Add to Slack button rather than the Sign in with Slack button)
+      let teamID = body.team_id || body.team.id
+      if (snapshot.child(teamID).exists()) {
+        console.log('this team exists')
+        // TODO: This team already exists, and they are CONFIRMED authed at this point (RIGHT?). At this point, we can use the body.team.id to grab their info stored in Firebase
+        // Resolve the promise here, passing the team Firebase data in as the value
+        let account = snapshot.child(teamID).val()
+        account.new_account = false
+        resolve(account)
+        return false
+      }
+      // Save the new team and data to Firebase (as it doens't already exist)
+      accounts.child(teamID).set(body, function () {
+        console.log('saving account')
+        // Indicate that this is a new_account for control flow
+        body.new_account = true
+        // Resolve the promise
+        resolve(body)
+      })
+    }).catch(function (error) {
+      console.log(error)
+      // Handle promise error and reject
+      reject(error)
+    })
+  })
+  return response
 }
 
 // Begin setup conversation with user
 let qs = require('querystring')
-function _startSetupConversation (userID, authToken) {
-  console.log('AUTH', authToken)
+function _findSetupConversation (userID, authToken) {
   // List channel ids that bot has access to
   axios.post('https://slack.com/api/im.list', qs.stringify({
     token: authToken
@@ -189,6 +205,7 @@ function _startSetupConversation (userID, authToken) {
       }
     }
   }).catch(function (error) {
+    // TODO Handle error
     console.log(error)
   })
 }
@@ -202,8 +219,9 @@ function _sendFirstMessage (channelID, authToken) {
     'text': 'Hi! Lets set this shit up! https://yay.hintsy.io/account',
     'attachments': [{'pre-text': 'pre-hello', 'text': 'text-world'}]
   })).then(function (response) {
-    console.log(response)
+    // NOTE Do we need to do anything with this response?
   }).catch(function (error) {
+    // TODO Handle error
     console.log(error)
   })
 }
