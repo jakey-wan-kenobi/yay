@@ -150,7 +150,7 @@ function _exchangeCodeForToken (codeRecieved) {
   return response
 }
 
-// PROMISE: Save the data received from Slack to Firebase
+// PROMISE: Save the data received from Slack to Firebase OR just sign the user in
 function _saveNewSlackAccountOrSignIn (body) {
   let response = new Promise(function (resolve, reject) {
     // If we have an error, stop
@@ -167,9 +167,9 @@ function _saveNewSlackAccountOrSignIn (body) {
       if (snapshot.child(teamID).exists()) {
         console.log('this team exists')
         // TODO: This team already exists, and they are CONFIRMED authed at this point (RIGHT?). At this point, we can use the body.team.id to grab their info stored in Firebase
-        // Resolve the promise here, passing the team Firebase data in as the value
         let account = snapshot.child(teamID).val()
         account.new_account = false
+        // Resolve the promise here, passing the team Firebase data in as the value
         resolve(account)
         return false
       }
@@ -190,7 +190,7 @@ function _saveNewSlackAccountOrSignIn (body) {
   return response
 }
 
-// Begin setup conversation with user
+// Find the direct message between the bot and the installing user
 let qs = require('querystring')
 function _findSetupConversation (userID, authToken) {
   // List channel ids that bot has access to
@@ -210,8 +210,7 @@ function _findSetupConversation (userID, authToken) {
   })
 }
 
-// This sends a message to the Slack user who installed the app, so we can finish the setup.
-// TODO: This isn't able to parse the array for some reason. It's using qs.stringify to format for urlencoded, which isn't working
+// Send a message to the Slack user who installed the app so we can finish the setup. TODO: This isn't able to parse the array for some reason. It's using qs.stringify to format for urlencoded, which isn't working
 function _sendFirstMessage (channelID, authToken) {
   axios.post('https://slack.com/api/chat.postMessage', qs.stringify({
     'token': authToken,
