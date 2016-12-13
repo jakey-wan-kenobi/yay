@@ -4,6 +4,8 @@ let https = require('https')
 let http = require('http')
 let request = require('request')
 let axios = require('axios')
+let bodyParser = require('body-parser')
+let jwt = require('jsonwebtoken')
 // Adds env variables from process.env to "process.env" object
 require('dotenv').config()
 
@@ -108,6 +110,22 @@ api.post('/async', function (req, res) {
 })
 
 /* *******************************************
+    MIDDLEWARE TO CHECK AUTHENTICATION STATE WITH JWT
+*********************************************/
+// TODO: Turn this into our authentication middleware for user in browser (credit cards, address, etc.)
+app.use(bodyParser.urlencoded({ extended: false }))
+app.post('/check-auth', function (req, res) {
+  res.header('Access-Control-Allow-Origin', '*')
+  res.header('Access-Control-Allow-Headers', 'X-Requested-With, Content-Type, Origin, Accept')
+  res.header('Access-Control-Allow-Methods', 'Post, Get, Options')
+  // Other ways to check incoming token are: URL params: || req.query.token || POST params: req.headers['x-access-token']
+  let token = req.body.token
+  let decoded = jwt.verify(token, process.env.JWT_SECRET)
+  // NOTE: If this 'decoded' contains user info, they are authorized. All good to let them do secret things.
+  console.log(decoded)
+})
+
+/* *******************************************
     AUTH: CREATE NEW ACCOUNT OR SIGN IN
 *********************************************/
 // Handle OAuth redirect: grab the code that is returned when user approves Yay app, and exchange it with Slack API for real access tokens. Then save those tokens and all the account info to Firebase.
@@ -125,8 +143,12 @@ app.get('/auth', function (req, res) {
     let result = yield _exchangeCodeForToken(req.query.code)
     // Save the new token to Firebase, or sign the user in if already exists
     let nextResult = yield _saveNewSlackAccountOrSignIn(result.data)
-    // Route user to account and/or sucess page (regardless of new account or not). TODO: Load Vue app here, and send user info along with it. Explore server side rendering here.
-    res.redirect('https://yay.hintsy.io/account/' + nextResult.team_id || nextResult.team.id)
+    // User is confirmed with Slack! Send them to account page and give them a JWT in cookie (or localStorage)
+    let nextNextResult = _prepareJWTForBrowser(nextResult)
+    // Send the JWT to browser. This contains everything needed to authenticate user, and includes the team_id and user_id so we don't have to go look it up.
+    res.cookie('access_token', nextNextResult, { domain: '.hintsy.io', maxAge: 86400000, secure: true })
+    // Redirect to account page. May want to suffix with team id: `+ nextResult.team_id || nextResult.team.id`
+    res.redirect('https://yay.hintsy.io/account/')
     // If this is a new account, proceed with bot setup
     if (nextResult.new_account) {
       _findSetupConversation(nextResult.user_id, nextResult.bot.bot_access_token)
@@ -136,6 +158,16 @@ app.get('/auth', function (req, res) {
     console.log(err)
   })
 })
+
+// Create a JWT for this user (this should only be done after confirming identity with Slack)
+function _prepareJWTForBrowser (data) {
+  let token = jwt.sign({
+    user_id: data.user_id,
+    team_id: data.team_id
+  }, process.env.JWT_SECRET, { expiresIn: '24h' })
+  console.log(token)
+  return token
+}
 
 // PROMISE: Exchange the Slack code for an access token (see here: https://api.slack.com/methods/oauth.access)
 function _exchangeCodeForToken (codeRecieved) {
@@ -165,7 +197,7 @@ function _saveNewSlackAccountOrSignIn (body) {
       // Decide what to do, depending on whether we're using "Sign in With Slack" or "Add to Slack". NOTE Team ID is different from body.team_id that is returned when user has clicked the Add to Slack button rather than the Sign in with Slack button)
       let teamID = body.team_id || body.team.id
       if (snapshot.child(teamID).exists()) {
-        console.log('this team exists')
+        console.log('this team exists', body)
         // TODO: This team already exists, and they are CONFIRMED authed at this point (RIGHT?). At this point, we can use the body.team.id to grab their info stored in Firebase
         let account = snapshot.child(teamID).val()
         account.new_account = false
@@ -243,7 +275,6 @@ function _sendFirstMessage (channelID, authToken) {
     YAY SLASH COMMAND
 *********************************************/
 // Parse application/x-www-form-urlencoded
-let bodyParser = require('body-parser')
 api.use(bodyParser.urlencoded({ extended: false }))
 api.post('/yay', function (req, res) {
   res.header('Access-Control-Allow-Origin', '*')
@@ -358,6 +389,17 @@ api.post('/yay-message-buttons', function (req, res) {
     res.send('😘 Okay, we\'ll figure it out later.')
   }
   // res.send('yes')
+})
+
+/* *******************************************
+    SAVE CREDIT CARD
+*********************************************/
+api.post('/save-card', function (req, res) {
+  res.header('Access-Control-Allow-Origin', '*')
+  res.header('Access-Control-Allow-Headers', 'X-Requested-With, Content-Type, Origin, Accept')
+  res.header('Access-Control-Allow-Methods', 'Post, Get, Options')
+  console.log(req)
+  res.send('hello world')
 })
 
 /* *******************************************
