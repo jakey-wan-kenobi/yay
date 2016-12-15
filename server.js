@@ -43,19 +43,11 @@ app.get('/', function (req, res) {
   res.send('<a href="https://slack.com/oauth/authorize?scope=commands,bot,users:read&client_id=104436581472.112407214276"><img alt="Add to Slack" height="40" width="139" src="https://platform.slack-edge.com/img/add_to_slack.png" srcset="https://platform.slack-edge.com/img/add_to_slack.png 1x, https://platform.slack-edge.com/img/add_to_slack@2x.png 2x" /></a><a href="https://slack.com/oauth/authorize?scope=identity.basic&client_id=104436581472.112407214276"><img alt="Sign in with Slack" src="https://api.slack.com/img/sign_in_with_slack.png" srcset="https://platform.slack-edge.com/img/sign_in_with_slack.png 1x, https://platform.slack-edge.com/img/sign_in_with_slack@2x.png 2x"/></a>')
 })
 
-let fs = require('fs')
-let dot = require('dot')
-app.get('/account', function (req, res) {
-  fs.readFile('views/account.html', function (error, html) {
-    if (error) {
-      // TODO: Handle error
-      return
-    }
-    let templateFn = dot.template(html)
-    let compiledTmp = templateFn()
-    res.send(compiledTmp)
-  })
-})
+/* *******************************************
+  SERVE YAY WEBSITE
+*********************************************/
+app.use('/account', express.static('dist'))
+app.use('/static', express.static(__dirname + '/dist/static'))
 
 // Create website servers
 http.createServer(lex.middleware(require('redirect-https')())).listen(80)
@@ -124,6 +116,12 @@ app.post('/check-auth', function (req, res) {
   // NOTE: If this 'decoded' contains user info, they are authorized. All good to let them do secret things.
   console.log(decoded)
 })
+
+// Pass in the req.body.token and get back the decoded JWT
+function _decodeJWT (token) {
+  let decoded = jwt.verify(token, process.env.JWT_SECRET)
+  return decoded
+}
 
 /* *******************************************
     AUTH: CREATE NEW ACCOUNT OR SIGN IN
@@ -394,11 +392,16 @@ api.post('/yay-message-buttons', function (req, res) {
 /* *******************************************
     SAVE CREDIT CARD
 *********************************************/
-api.post('/save-card', function (req, res) {
-  res.header('Access-Control-Allow-Origin', '*')
-  res.header('Access-Control-Allow-Headers', 'X-Requested-With, Content-Type, Origin, Accept')
+api.use(bodyParser.json())
+api.post('/savecard', function (req, res) {
+  res.header('Access-Control-Allow-Origin', '*') // NOTE: Change to yay.hintsy.io in production
+  res.header('Access-Control-Allow-Headers', 'X-Requested-With, Content-Type, Origin, Accept, Bearer')
   res.header('Access-Control-Allow-Methods', 'Post, Get, Options')
-  console.log(req)
+  // _decodeJWT(req)
+  // TODO: This isn't the most optimal solution because it relies on getting the cookie/JWT in the format 'access_token=XYZ'
+  let authJWT = req.headers.bearer.replace('access_token=', '')
+  let decodedJWT = _decodeJWT(authJWT)
+  console.log(decodedJWT)
   res.send('hello world')
 })
 
