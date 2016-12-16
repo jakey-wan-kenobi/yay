@@ -393,17 +393,37 @@ api.post('/yay-message-buttons', function (req, res) {
     SAVE CREDIT CARD
 *********************************************/
 api.use(bodyParser.json())
-api.post('/savecard', function (req, res) {
-  res.header('Access-Control-Allow-Origin', '*') // NOTE: Change to yay.hintsy.io in production
-  res.header('Access-Control-Allow-Headers', 'X-Requested-With, Content-Type, Origin, Accept, Bearer')
-  res.header('Access-Control-Allow-Methods', 'Post, Get, Options')
-  // _decodeJWT(req)
-  // TODO: This isn't the most optimal solution because it relies on getting the cookie/JWT in the format 'access_token=XYZ'
-  let authJWT = req.headers.bearer.replace('access_token=', '')
-  let decodedJWT = _decodeJWT(authJWT)
-  console.log(decodedJWT)
-  res.send('hello world')
-})
+api.route('/savecard')
+  .all(function (req, res, next) {
+    res.header('Access-Control-Allow-Origin', '*')
+    res.header('Access-Control-Allow-Headers', 'X-Requested-With, Content-Type, Origin, Accept, Bearer')
+    next()
+  })
+  // This options route is required for the preflight done by the browser
+  // .options(function (req, res, next) {
+  //   res.status(200).end()
+  //   next()
+  // })
+  .post(function (req, res, next) {
+    // TODO: This isn't the most optimal solution because it relies on getting the cookie/JWT in the format 'access_token=XYZ'
+    let authJWT = req.headers.bearer.replace('access_token=', '')
+    let decodedJWT = _decodeJWT(authJWT)
+    console.log(decodedJWT)
+    console.log(req.body)
+    res.send(200)
+  })
+
+// api.post('/savecard', function (req, res) {
+//   res.header('Access-Control-Allow-Origin', '*')
+//   res.header('Access-Control-Allow-Headers', 'X-Requested-With, Content-Type, Origin, Accept')
+//   res.header('Access-Control-Allow-Methods', 'Post, Get, Options')
+//   // _decodeJWT(req)
+//   // TODO: This isn't the most optimal solution because it relies on getting the cookie/JWT in the format 'access_token=XYZ'
+//   let authJWT = req.headers.bearer.replace('access_token=', '')
+//   let decodedJWT = _decodeJWT(authJWT)
+//   console.log(decodedJWT)
+//   res.send('hello world')
+// })
 
 /* *******************************************
     METHOD: RETURN NEW PRIZE
