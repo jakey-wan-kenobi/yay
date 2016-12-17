@@ -6,8 +6,10 @@ let request = require('request')
 let axios = require('axios')
 let bodyParser = require('body-parser')
 let jwt = require('jsonwebtoken')
+let co = require('co')
 // Adds env variables from process.env to "process.env" object
 require('dotenv').config()
+let stripe = require('stripe')(process.env.TEST_STRIPE_KEY)
 
 /* *******************************************
   LETS-ENCRYPT SSL SETUP
@@ -80,42 +82,20 @@ let api = express()
 https.createServer(lex.httpsOptions, lex.middleware(api)).listen(3000)
 
 /* *******************************************
-    TESTING CO TODO Remove this for production
-*********************************************/
-let co = require('co')
-api.post('/async', function (req, res) {
-  res.header('Access-Control-Allow-Origin', '*')
-  res.header('Access-Control-Allow-Headers', 'X-Requested-With, Content-Type, Origin, Accept')
-  res.header('Access-Control-Allow-Methods', 'Post, Get, Options')
-  co(function * () {
-    // yield any promise
-    // let result = yield Promise.resolve(true)
-    const result = yield axios.get('https://jsonplaceholder.typicode.com/posts/900').catch(function (error) {
-      console.log(error)
-      res.send(400)
-    })
-    res.send(result.data)
-  }).catch(onError)
-  function onError (err) {
-    console.log(err)
-  }
-})
-
-/* *******************************************
     MIDDLEWARE TO CHECK AUTHENTICATION STATE WITH JWT
 *********************************************/
 // TODO: Turn this into our authentication middleware for user in browser (credit cards, address, etc.)
 app.use(bodyParser.urlencoded({ extended: false }))
-app.post('/check-auth', function (req, res) {
-  res.header('Access-Control-Allow-Origin', '*')
-  res.header('Access-Control-Allow-Headers', 'X-Requested-With, Content-Type, Origin, Accept')
-  res.header('Access-Control-Allow-Methods', 'Post, Get, Options')
-  // Other ways to check incoming token are: URL params: || req.query.token || POST params: req.headers['x-access-token']
-  let token = req.body.token
-  let decoded = jwt.verify(token, process.env.JWT_SECRET)
-  // NOTE: If this 'decoded' contains user info, they are authorized. All good to let them do secret things.
-  console.log(decoded)
-})
+// app.post('/check-auth', function (req, res) {
+//   res.header('Access-Control-Allow-Origin', '*')
+//   res.header('Access-Control-Allow-Headers', 'X-Requested-With, Content-Type, Origin, Accept')
+//   res.header('Access-Control-Allow-Methods', 'Post, Get, Options')
+//   // Other ways to check incoming token are: URL params: || req.query.token || POST params: req.headers['x-access-token']
+//   let token = req.body.token
+//   let decoded = jwt.verify(token, process.env.JWT_SECRET)
+//   // NOTE: If this 'decoded' contains user info, they are authorized. All good to let them do secret things.
+//   console.log(decoded)
+// })
 
 // Pass in the req.body.token and get back the decoded JWT
 function _decodeJWT (token) {
@@ -163,7 +143,6 @@ function _prepareJWTForBrowser (data) {
     user_id: data.user_id,
     team_id: data.team_id
   }, process.env.JWT_SECRET, { expiresIn: '24h' })
-  console.log(token)
   return token
 }
 
@@ -195,7 +174,6 @@ function _saveNewSlackAccountOrSignIn (body) {
       // Decide what to do, depending on whether we're using "Sign in With Slack" or "Add to Slack". NOTE Team ID is different from body.team_id that is returned when user has clicked the Add to Slack button rather than the Sign in with Slack button)
       let teamID = body.team_id || body.team.id
       if (snapshot.child(teamID).exists()) {
-        console.log('this team exists', body)
         // TODO: This team already exists, and they are CONFIRMED authed at this point (RIGHT?). At this point, we can use the body.team.id to grab their info stored in Firebase
         let account = snapshot.child(teamID).val()
         account.new_account = false
@@ -205,7 +183,6 @@ function _saveNewSlackAccountOrSignIn (body) {
       }
       // Save the new team and data to Firebase (as it doens't already exist)
       accounts.child(teamID).set(body, function () {
-        console.log('saving account')
         // Indicate that this is a new_account for control flow
         body.new_account = true
         // Resolve the promise
@@ -230,7 +207,6 @@ function _findSetupConversation (userID, authToken) {
     let ims = response.data.ims
     for (let i = 0; i < ims.length; i++) {
       if (ims[i].user === userID) {
-        console.log('this is the convo we target', ims[i])
         _sendFirstMessage(ims[i].id, authToken)
       }
     }
@@ -287,14 +263,12 @@ api.post('/yay', function (req, res) {
   let data = req.body
   // Handle 'help' Slash command
   if (data.text.indexOf('help') > -1) {
-    console.log('help slashy')
     // TODO: Return help message
     res.send('*Weeeeee!* Here\'s all the cool tricks I can do: \n`/yay @user` To send an amazing prize to a teammate. \n`/yay account` To view your account usage & edit your payment or shipping details.  \n`/yay help` To...well, you already know what that does.')
     return
   }
 
   if (data.text.indexOf('account') > -1) {
-    console.log('account slashy')
     // TODO: Return account link
     res.send('Go here to edit & view your account details: https://yay.hintsy.io/account/' + data.team_id)
     return
@@ -308,7 +282,6 @@ api.post('/yay', function (req, res) {
     return userName[0].substr(1)
   }
   const thisUserName = returnUserName(data.text)
-  console.log(thisUserName)
 
   // Step 2: Get "access_token" from Firebase with "data.team_id"
   let accounts = db.ref('/slack_accounts/' + data.team_id)
@@ -373,7 +346,6 @@ api.post('/yay-message-buttons', function (req, res) {
   //   return false
   // }
   let data = JSON.parse(req.body.payload)
-  console.log(data)
   // NOTE: From Slack docs: "Though presented as an array, at this time you'll only receive a single action per incoming invocation."
   if (data.actions[0].name === 'did_choose_prize') {
     // TODO: Write the purchase function. Note that this needs to return a promise and be awaited.
@@ -400,30 +372,104 @@ api.route('/savecard')
     next()
   })
   // This options route is required for the preflight done by the browser
-  // .options(function (req, res, next) {
-  //   res.status(200).end()
-  //   next()
-  // })
+  .options(function (req, res, next) {
+    res.status(200).end()
+    // next()
+  })
   .post(function (req, res, next) {
-    // TODO: This isn't the most optimal solution because it relies on getting the cookie/JWT in the format 'access_token=XYZ'
+    // TODO: Auth the request. This isn't the most optimal solution because it relies on getting the cookie/JWT in the format 'access_token=XYZ'
     let authJWT = req.headers.bearer.replace('access_token=', '')
+    let creditCard = req.body
+    // If no bearer token (JWT cookie) includedin request, send 403 and return
+    if (!authJWT) {
+      res.sendStatus(403)
+      return
+    }
     let decodedJWT = _decodeJWT(authJWT)
-    console.log(decodedJWT)
-    console.log(req.body)
-    res.send(200)
+    // If not authed, send a 403 and return
+    if (!decodedJWT) {
+      res.send(403)
+      return
+    }
+    // Check whether stripe_id exists, and then decide how to process credit card token from Stripe.js
+    co(function * () {
+      let stripeIDCheck = yield _checkForStripeID(decodedJWT)
+      _processCreditCard(stripeIDCheck, creditCard, decodedJWT)
+      res.sendStatus(200)
+    })
   })
 
-// api.post('/savecard', function (req, res) {
-//   res.header('Access-Control-Allow-Origin', '*')
-//   res.header('Access-Control-Allow-Headers', 'X-Requested-With, Content-Type, Origin, Accept')
-//   res.header('Access-Control-Allow-Methods', 'Post, Get, Options')
-//   // _decodeJWT(req)
-//   // TODO: This isn't the most optimal solution because it relies on getting the cookie/JWT in the format 'access_token=XYZ'
-//   let authJWT = req.headers.bearer.replace('access_token=', '')
-//   let decodedJWT = _decodeJWT(authJWT)
-//   console.log(decodedJWT)
-//   res.send('hello world')
-// })
+function _processCreditCard (stripeCheck, card, auth) {
+  // If team already has a stripe_id, add this card via Stripe API
+  if (stripeCheck === 'yes') {
+    console.log('customer exists')
+    // _saveToExistingStripeCustomer()
+  }
+  // If team does not already have a stripe_id, create this customer via Stripe API
+  if (stripeCheck === 'no') {
+    console.log('customer does not exist')
+    _createNewStripeCustomer(card, auth)
+  }
+}
+
+// Create a new Stripe customer and save to Firebase
+function _createNewStripeCustomer (card, auth) {
+  console.log('Creating new stripe customer')
+  stripe.customers.create({
+    description: 'Slack customer',
+    metadata: {
+      user_id: auth.user_id,
+      team_id: auth.team_id
+    },
+    source: card.id // obtained with Stripe.js
+    // email: TODO: Store the primary user's email in the JWT so we can add it here for receipts etc.
+  }, function (err, customer) {
+    // Asynchronously called
+    if (err) {
+      // TODO: Handle error
+      console.log(err)
+    }
+    // TODO: Save stripe ID to Firebase
+    let account = db.ref('/slack_accounts/' + auth.team_id)
+    account.update({
+      stripe_id: customer.id
+    })
+  })
+}
+
+// function _saveToExistingStripeCustomer () {
+//
+// }
+
+// Check if customer already has a stripe_id
+function _checkForStripeID (auth) {
+  let response = new Promise(function (resolve, reject) {
+    let has_stripe_id = ''
+    // Check whether a stripe_id already exists for this team
+    let accounts = db.ref('/slack_accounts/' + auth.team_id)
+    // Check whether team already exists in our Firebase
+    accounts.once('value').then(function (snapshot) {
+      let team = snapshot.val()
+      switch (team.slack_id) {
+        case true:
+          has_stripe_id = 'yes'
+          break
+        case undefined:
+          has_stripe_id = 'no'
+          break
+        case false:
+          has_stripe_id = 'no'
+          break
+      }
+      resolve(has_stripe_id)
+      return has_stripe_id
+    }, function (error) {
+      // TODO: Make sure this actually catches the error -- artificially input a bad value into 'accounts' to test
+      reject(error)
+    })
+  })
+  return response
+}
 
 /* *******************************************
     METHOD: RETURN NEW PRIZE
