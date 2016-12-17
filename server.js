@@ -515,7 +515,7 @@ const products = [
 
 function _returnNewPrize (index, products) {
   // Use the index to know which product to return
-  let pointer = parseInt(index) || 0
+  let pointer = parseInt(index, 10) || 0
   pointer++
 
   // If we've reached the end of the products, start over at 0.
@@ -564,7 +564,6 @@ function _returnNewPrize (index, products) {
 /* *******************************************
     METHOD: PURCHASE THIS PRIZE
 *********************************************/
-let stripe_key = process.env.TEST_STRIPE_KEY
 function _purchaseThisPrize (index, products) {
   // If we don't have a value, return an error. Something went wrong. TODO: Sentry report here.
   if (!index) {
