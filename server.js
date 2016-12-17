@@ -395,26 +395,25 @@ api.route('/savecard')
     co(function * () {
       let stripeIDCheck = yield _checkForStripeID(decodedJWT)
       _processCreditCard(stripeIDCheck, creditCard, decodedJWT)
+      // TODO: Turn these into async and then return status from result
       res.sendStatus(200)
     })
   })
 
+// Decide whether to add new Stripe customer, or update an existing one
 function _processCreditCard (stripeCheck, card, auth) {
   // If team already has a stripe_id, add this card via Stripe API
-  if (stripeCheck === 'yes') {
-    console.log('customer exists')
-    // _saveToExistingStripeCustomer()
+  if (stripeCheck.has_stripe_id === 'yes') {
+    _saveToExistingStripeCustomer(stripeCheck, card, auth)
   }
   // If team does not already have a stripe_id, create this customer via Stripe API
-  if (stripeCheck === 'no') {
-    console.log('customer does not exist')
+  if (stripeCheck.has_stripe_id === 'no') {
     _createNewStripeCustomer(card, auth)
   }
 }
 
 // Create a new Stripe customer and save to Firebase
 function _createNewStripeCustomer (card, auth) {
-  console.log('Creating new stripe customer')
   stripe.customers.create({
     description: 'Slack team ' + auth.team_id,
     metadata: {
@@ -437,32 +436,43 @@ function _createNewStripeCustomer (card, auth) {
   })
 }
 
-// function _saveToExistingStripeCustomer () {
-//
-// }
+// Update an existing Stripe customer
+function _saveToExistingStripeCustomer (stripeCheck, card, auth) {
+  stripe.customers.update(stripeCheck.stripe_id, {
+    source: card.id
+  }, function (err, customer) {
+    // TODO: Handle error
+    if (err) {
+      console.log(err)
+      return
+    }
+    // TODO: Sucess message. Not saving to Firebase because we saved default card to Stripe. We'll just poll Stripe API if we need that data.
+  })
+}
 
 // Check if customer already has a stripe_id
 function _checkForStripeID (auth) {
+  let stripeDataCheck = {}
   let response = new Promise(function (resolve, reject) {
-    let has_stripe_id = ''
     // Check whether a stripe_id already exists for this team
     let accounts = db.ref('/slack_accounts/' + auth.team_id)
     // Check whether team already exists in our Firebase
     accounts.once('value').then(function (snapshot) {
       let team = snapshot.val()
-      switch (team.stripe_id) {
+      switch (typeof team.stripe_id === 'string') {
         case true:
-          has_stripe_id = 'yes'
+          stripeDataCheck.has_stripe_id = 'yes'
+          stripeDataCheck.stripe_id = team.stripe_id
           break
         case undefined:
-          has_stripe_id = 'no'
+          stripeDataCheck.has_stripe_id = 'no'
           break
         case false:
-          has_stripe_id = 'no'
+          stripeDataCheck.has_stripe_id = 'no'
           break
       }
-      resolve(has_stripe_id)
-      return has_stripe_id
+      resolve(stripeDataCheck)
+      return stripeDataCheck
     }, function (error) {
       // TODO: Make sure this actually catches the error -- artificially input a bad value into 'accounts' to test
       reject(error)
