@@ -416,7 +416,7 @@ function _processCreditCard (stripeCheck, card, auth) {
 function _createNewStripeCustomer (card, auth) {
   console.log('Creating new stripe customer')
   stripe.customers.create({
-    description: 'Slack customer',
+    description: 'Slack team ' + auth.team_id,
     metadata: {
       user_id: auth.user_id,
       team_id: auth.team_id
@@ -450,7 +450,7 @@ function _checkForStripeID (auth) {
     // Check whether team already exists in our Firebase
     accounts.once('value').then(function (snapshot) {
       let team = snapshot.val()
-      switch (team.slack_id) {
+      switch (team.stripe_id) {
         case true:
           has_stripe_id = 'yes'
           break
