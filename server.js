@@ -493,45 +493,6 @@ function _checkForStripeID (auth) {
 /* *******************************************
     METHOD: RETURN NEW PRIZE
 *********************************************/
-// const products = [
-//   {
-//     'name': 'Special Edition Expedition Notebooks',
-//     'brand': 'Field Notes',
-//     'description': 'Waterproof and tear-proof, this paper will survive the rough and tumble of your journeys.',
-//     'image_url': 'https://res.cloudinary.com/hintsy/image/upload/v1478811724/expedition4_g0cnwk.jpg',
-//     'url': 'https://hintsygifts.com/shop/Field-Notes/Special-Edition-Notebooks',
-//     'price': 13,
-//     'bot_text': 'Wonderful! Let\'s send a prize to Beth Sharif. How about this?'
-//   },
-//   {
-//     'name': 'Golden Coast Soy Candle by P.F. Candle Co.',
-//     'brand': 'P.F. Candle Co.',
-//     'description': 'Hand poured in a sunny studio in LA\'s Arts District',
-//     'image_url': 'https://res.cloudinary.com/hintsy/image/upload/v1480701134/amberandmosscandle_xzgufv.jpg',
-//     'url': 'https://hintsygifts.com/shop/P.F.-Candle-Co./Soy-Candle',
-//     'price': 12,
-//     'bot_text': 'Okay, tough crowd. How about this one?'
-//   },
-//   {
-//     'name': 'QUIN + Union Wine Pinot Noir Lollipops',
-//     'brand': 'QUIN',
-//     'description': 'Union makes the wine and QUIN turns it in to candy. Pretty cool!',
-//     'image_url': 'https://res.cloudinary.com/hintsy/image/upload/v1477422335/Quin_Candy_Pinot_Noir_Lollipops_Hand_made_in_Portland_OR_1_of_1_jugwbr.jpg',
-//     'url': 'https://hintsygifts.com/shop/QUIN/QUIN-+-Union-Wine-Pinot-Noir-Lollipops',
-//     'price': 7,
-//     'bot_text': 'Okay, okay. This should work—everybody loves candy!'
-//   },
-//   {
-//     'name': 'Almond Butter Chocolate Bar',
-//     'brand': 'Mast Brothers',
-//     'description': 'Obsessive attention to detail, wonderful craftsmanship, and inspirational simplicity. ',
-//     'image_url': 'https://res.cloudinary.com/hintsy/image/upload/v1478482952/mastalmond_r2jukq.jpg',
-//     'url': 'https://hintsygifts.com/shop/Mast-Brothers/Mast-Brothers-Signature-Chocolate-Bars',
-//     'price': 7,
-//     'bot_text': 'Chocolate makes everyone happy. It\'s a scientific fact.'
-//   }
-// ]
-
 function _returnNewPrize (index) {
   // Retrieve products from Stripe Relay, returning a promise
   const _getProducts = function () {
