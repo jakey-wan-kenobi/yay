@@ -354,7 +354,7 @@ api.post('/yay-message-buttons', function (req, res) {
   // NOTE: From Slack docs: "Though presented as an array, at this time you'll only receive a single action per incoming invocation."
   if (data.actions[0].name === 'did_choose_prize') {
     // Pass the "callback_id" key which contains the appropriate product SKU, plus the "team_id", to our global purchase method.
-    _purchaseThisPrize(data.callback_id, data.team.id).then(function (val) {
+    _purchaseThisPrize(data.callback_id, data.team.id, data.user).then(function (val) {
       console.log('this should have an order value!', val)
       res.send('great, we did it!')
     }).catch(function (err) {
@@ -593,7 +593,7 @@ function _returnNewPrize (index) {
 /* *******************************************
     METHOD: PURCHASE THIS PRIZE
 *********************************************/
-function _purchaseThisPrize (sku, team_id) {
+function _purchaseThisPrize (sku, team_id, purchaser) {
   // Return a promise that resolves with the new gift. This can be sent back to Slack via res.send(val)
   return new Promise(function (resolve, reject) {
     // Lookup "stripe_id" from Firebase using "team_id", in order to pass to purchase function
@@ -605,6 +605,13 @@ function _purchaseThisPrize (sku, team_id) {
       stripe.orders.create({
         currency: 'usd',
         customer: stripe_id,
+        metadata: {
+          purchaser_id: purchaser.id,
+          purchaser_name: purchaser.name
+          // recipient_name: recipient.name,
+          // recipient_handle: recipient.handle
+          // recipient_id: recipient.id
+        },
         items: [
           {
             type: 'sku',
