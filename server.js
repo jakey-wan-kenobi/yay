@@ -353,9 +353,14 @@ api.post('/yay-message-buttons', function (req, res) {
   let data = JSON.parse(req.body.payload)
   // NOTE: From Slack docs: "Though presented as an array, at this time you'll only receive a single action per incoming invocation."
   if (data.actions[0].name === 'did_choose_prize') {
-    // TODO: Write the purchase function. Note that this needs to return a promise and be awaited.
-    let getThisPrize = _purchaseThisPrize(data.actions[0].value)
-    res.send(getThisPrize)
+    // Pass the "callback_id" key which contains the appropriate product SKU, plus the "team_id", to our global purchase method.
+    _purchaseThisPrize(data.callback_id, data.team.id).then(function (val) {
+      console.log('this should have an order value!', val)
+      res.send('great, we did it!')
+    }).catch(function (err) {
+      // TODO: Handle error
+      console.log(err)
+    })
   } else if (data.actions[0].name === 'choose_next_prize') {
     // Get a new gift using our global method.
     _returnNewPrize(data.actions[0].value).then(function (val) {
@@ -550,7 +555,7 @@ function _returnNewPrize (index) {
       'text': 'Testing the bot text', // products[pointer].bot_text,
       'attachments': [
         {
-          'callback_id': 'choose_prize',
+          'callback_id': products[pointer].skus.data[0].id,
           'fallback': 'Required plain-text summary of the attachment.',
           'color': '#59FFBA',
           'title': products[pointer].name + ' by ' + products[pointer].metadata.brand,
@@ -588,33 +593,32 @@ function _returnNewPrize (index) {
 /* *******************************************
     METHOD: PURCHASE THIS PRIZE
 *********************************************/
-function _purchaseThisPrize (index, products) {
-  // If we don't have a value, return an error. Something went wrong. TODO: Sentry report here.
-  if (!index) {
-    return
-  }
-
-  console.log('purchase button clicked')
-
-  stripe.orders.create({
-    currency: 'usd',
-    customer: 'cus_9lIfFEzhqzVzNx',
-    items: [
-      {
-        type: 'sku',
-        parent: 'sku_9lQ91IX19C13Hn'
-      }
-    ]
-  }, function (err, order) {
-    console.log(err, order)
+function _purchaseThisPrize (sku, team_id) {
+  // Return a promise that resolves with the new gift. This can be sent back to Slack via res.send(val)
+  return new Promise(function (resolve, reject) {
+    // Lookup "stripe_id" from Firebase using "team_id", in order to pass to purchase function
+    let accounts = db.ref('/slack_accounts/' + team_id)
+    let stripe_id = ''
+    accounts.once('value').then(function (snapshot) {
+      stripe_id = snapshot.child('stripe_id').val()
+      // Place the order using the sku and stripe_id
+      stripe.orders.create({
+        currency: 'usd',
+        customer: stripe_id,
+        items: [
+          {
+            type: 'sku',
+            parent: sku
+          }
+        ]
+      }, function (err, order) {
+        if (err) {
+          reject(err)
+          return err
+        }
+        resolve(order)
+        return order
+      })
+    })
   })
-
-  // This prize was selected
-  // let selectedPrize = products[index]
-
-  // Place the order
-  // let _placeOrder = function (price, stripe) {
-  //  let chargeAmount = selectedPrize.price * 100
-  //  let stripeID = 'id here' // TODO: Stripe ID
-  // }
 }
