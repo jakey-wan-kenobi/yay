@@ -371,10 +371,10 @@ api.post('/yay-message-buttons', function (req, res) {
 })
 
 /* *******************************************
-    SAVE CREDIT CARD
+    SAVE ORDER DETAILS (CREDIT CARD OR SHIPPING ADDRESS)
 *********************************************/
 api.use(bodyParser.json())
-api.route('/savecard')
+api.route('/save-order-details')
   .all(function (req, res, next) {
     res.header('Access-Control-Allow-Origin', '*')
     res.header('Access-Control-Allow-Headers', 'X-Requested-With, Content-Type, Origin, Accept, Bearer')
@@ -388,7 +388,8 @@ api.route('/savecard')
   .post(function (req, res, next) {
     // TODO: Auth the request. This isn't the most optimal solution because it relies on getting the cookie/JWT in the format 'access_token=XYZ'
     let authJWT = req.headers.bearer.replace('access_token=', '')
-    let creditCard = req.body
+    let creditCard = req.body.card ? req.body : null
+    let shipping = req.body.line1 ? req.body : null
     // If no bearer token (JWT cookie) includedin request, send 403 and return
     if (!authJWT) {
       res.sendStatus(403)
@@ -400,36 +401,41 @@ api.route('/savecard')
       res.send(403)
       return
     }
-    // Check whether stripe_id exists, and then decide how to process credit card token from Stripe.js
+    // Check whether stripe_id exists, and then decide how to process data recieved (may be credit card token from Stripe, or shipping address data)
     co(function * () {
       let stripeIDCheck = yield _checkForStripeID(decodedJWT)
-      _processCreditCard(stripeIDCheck, creditCard, decodedJWT)
+      _processDataConditionally(stripeIDCheck, creditCard, decodedJWT, shipping)
       // TODO: Turn these into async and then return status from result
       res.sendStatus(200)
     })
   })
 
 // Decide whether to add new Stripe customer, or update an existing one
-function _processCreditCard (stripeCheck, card, auth) {
+function _processDataConditionally (stripeCheck, card, auth, shipping) {
   // If team already has a stripe_id, add this card via Stripe API
   if (stripeCheck.has_stripe_id === 'yes') {
-    _saveToExistingStripeCustomer(stripeCheck, card, auth)
+    _saveToExistingStripeCustomer(stripeCheck, card, auth, shipping)
   }
   // If team does not already have a stripe_id, create this customer via Stripe API
   if (stripeCheck.has_stripe_id === 'no') {
-    _createNewStripeCustomer(card, auth)
+    _createNewStripeCustomer(card, auth, shipping)
   }
 }
 
 // Create a new Stripe customer and save to Firebase
-function _createNewStripeCustomer (card, auth) {
+function _createNewStripeCustomer (card, auth, shipping) {
   stripe.customers.create({
     description: 'Slack team ' + auth.team_id,
     metadata: {
       user_id: auth.user_id,
       team_id: auth.team_id
     },
-    source: card.id // obtained with Stripe.js
+    // Note: The following two keys are conditional, because we use this route to handle both credit card and address.
+    source: card ? card.id : undefined, // Token obtained with Stripe.js
+    shipping: shipping ? {
+      address: shipping,
+      name: 'Team' // TODO: I'm hacking this in as a default just becuase Stripe requires it to save address
+    } : undefined
     // email: TODO: Store the primary user's email in the JWT so we can add it here for receipts etc.
   }, function (err, customer) {
     // Asynchronously called
@@ -446,9 +452,15 @@ function _createNewStripeCustomer (card, auth) {
 }
 
 // Update an existing Stripe customer
-function _saveToExistingStripeCustomer (stripeCheck, card, auth) {
+function _saveToExistingStripeCustomer (stripeCheck, card, auth, shipping) {
+  console.log(shipping, stripeCheck.stripe_id)
   stripe.customers.update(stripeCheck.stripe_id, {
-    source: card.id
+    // Note: The following two keys are conditional, because we use this route to handle both credit card and address.
+    source: card ? card.id : undefined,
+    shipping: shipping ? {
+      address: shipping,
+      name: 'Team' // TODO: I'm hacking this in as a default just becuase Stripe requires it to save address
+    } : undefined
   }, function (err, customer) {
     // TODO: Handle error
     if (err) {
@@ -456,6 +468,7 @@ function _saveToExistingStripeCustomer (stripeCheck, card, auth) {
       return
     }
     // TODO: Sucess message. Not saving to Firebase because we saved default card to Stripe. We'll just poll Stripe API if we need that data.
+    console.log('success!', customer)
   })
 }
 
