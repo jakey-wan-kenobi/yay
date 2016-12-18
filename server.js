@@ -270,7 +270,7 @@ api.post('/yay', function (req, res) {
 
   if (data.text.indexOf('account') > -1) {
     // TODO: Return account link
-    res.send('Go here to edit & view your account details: https://yay.hintsy.io/account/' + data.team_id)
+    res.send('Go here to edit & view your account details: https://yay.hintsy.io/account/') // + data.team_id
     return
   }
 
@@ -593,6 +593,21 @@ function _purchaseThisPrize (index, products) {
   if (!index) {
     return
   }
+
+  console.log('purchase button clicked')
+
+  stripe.orders.create({
+    currency: 'usd',
+    customer: 'cus_9lIfFEzhqzVzNx',
+    items: [
+      {
+        type: 'sku',
+        parent: 'sku_9lQ91IX19C13Hn'
+      }
+    ]
+  }, function (err, order) {
+    console.log(err, order)
+  })
 
   // This prize was selected
   // let selectedPrize = products[index]
