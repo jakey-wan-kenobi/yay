@@ -579,9 +579,9 @@ function _returnNewPrize (index) {
           'callback_id': 'choose_prize',
           'fallback': 'Required plain-text summary of the attachment.',
           'color': '#59FFBA',
-          'title': products[pointer].name,
+          'title': products[pointer].name + ' by ' + products[pointer].metadata.brand,
           'title_link': products[pointer].url,
-          'text': '$' + products[pointer].skus.data[0].price + ' | ' + products[pointer].description,
+          'text': '$' + ((products[pointer].skus.data[0].price) / 100).toFixed(2) + ' | ' + products[pointer].description,
           'image_url': products[pointer].images[0],
           'actions': [
             {
