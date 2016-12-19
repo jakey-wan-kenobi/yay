@@ -268,69 +268,26 @@ api.post('/yay', function (req, res) {
     return
   }
 
+  // Handle 'account' Slash command
   if (data.text.indexOf('account') > -1) {
     // TODO: Return account link
     res.send('Go here to edit & view your account details: https://yay.hintsy.io/account/') // + data.team_id
     return
   }
 
-  // Step 1: Parse the user name out of the req.body.text field. Use a regex pattern to grab from @string. For now, just grabbing entire text body
-  const returnUserName = function (text) {
-    const recipient = text
-    const pattern = /\B@[a-z0-9_-]+/gi
-    const userName = recipient.match(pattern)
-    return userName[0].substr(1)
+  // Handle '@user' Slask command
+  // Parse user handle from text sent over
+  const recipientHandle = _returnUserName(data.text)
+
+  if (typeof recipientHandle !== 'string') {
+    // TODO: Handle this error better with a more sophisticated response
+    res.send('Hm. I couldn\'t find that user. Make sure to use their @user Slack username!')
+    return
   }
-  const thisUserName = returnUserName(data.text)
-
-  // Step 2: Get "access_token" from Firebase with "data.team_id"
-  let accounts = db.ref('/slack_accounts/' + data.team_id)
-  accounts.once('value').then(function (snapshot) {
-    let access_token = snapshot.child('access_token').val()
-    _getUserList(access_token)
-  })
-
-  // Step 3: Get user list using "access_token"
-  function _getUserList (access_token) {
-    request.post({
-      url: 'https://slack.com/api/users.list',
-      form: {
-        token: access_token
-      }
-    }, function (err, httpResponse, body) {
-      if (err) {
-        // TODO: Handle error
-        return
-      }
-      // TODO: Step 4 here
-      _getRecipientInfo(thisUserName, JSON.parse(body).members)
-    })
-  }
-
-  // Step 4: TODO: Parse through member list to find member with "name" that equals handle we've parsed out of text
-  function _getRecipientInfo (userName, userList) {
-    for (var i = 0; i < userList.length; i++) {
-      if (userList[i].name === userName) {
-        console.log('This is our user:', userList[i].real_name)
-      }
-    }
-  }
-
-  // Example request body in "req.body"
-  // { token: 'ERJo2Nrv9AE5fULeYegRHIWS',
-  //   team_id: 'T32CUH3DW',
-  //   team_domain: 'hintsy',
-  //   channel_id: 'D3AGCH5EG',
-  //   channel_name: 'directmessage',
-  //   user_id: 'U3326P63D',
-  //   user_name: 'jake',
-  //   command: '/yay',
-  //   text: '@jake',
-  //   response_url: 'https://hooks.slack.com/commands/T32CUH3DW/113315981924/7KqhP2GqmwhQVs5ebFcflCvY' }
 
   co(function * () {
     // Use method to get a prize and return it to Slack.
-    let getNewPrize = yield _returnNewPrize(-1)
+    let getNewPrize = yield _returnNewPrize(-1, recipientHandle)
     res.send(getNewPrize)
   }).catch(function (err) {
     // TODO: Handle error
@@ -511,7 +468,7 @@ function _checkForStripeID (auth) {
 /* *******************************************
     METHOD: RETURN NEW PRIZE
 *********************************************/
-function _returnNewPrize (index) {
+function _returnNewPrize (index, recipientHandle) {
   // Retrieve products from Stripe Relay, returning a promise
   const _getProducts = function () {
     return new Promise(function (resolve, reject) {
@@ -531,7 +488,6 @@ function _returnNewPrize (index) {
   return new Promise(function (resolve, reject) {
     _getProducts().then(function (products) {
       let returnThisPrize = _returnNewPrizeFromList(products, index)
-      console.log(returnThisPrize)
       resolve(returnThisPrize)
       return returnThisPrize
     }).catch(function (err) {
@@ -552,7 +508,7 @@ function _returnNewPrize (index) {
     }
 
     const getNextPrize = {
-      'text': 'Testing the bot text', // products[pointer].bot_text,
+      'text': 'So we wanna buy a gift for *' + recipientHandle + '*. How about this?', // products[pointer].bot_text,
       'attachments': [
         {
           'callback_id': products[pointer].skus.data[0].id,
@@ -629,3 +585,55 @@ function _purchaseThisPrize (sku, team_id, purchaser) {
     })
   })
 }
+
+/* *******************************************
+    METHOD: RETURN USER HANDLE FROM TEXT
+*********************************************/
+function _returnUserName (text) {
+  const recipient = text
+  const pattern = /\B@[a-z0-9_-]+/gi
+  const userName = recipient.match(pattern)
+  if (!userName) {
+    return false
+  }
+  return userName[0]
+  // return userName[0].substr(1) // This removes the '@' symbol, but I decided to keep it
+}
+
+/* *******************************************
+    METHOD: RETURN USER info FROM HANDLE
+*********************************************/
+// function _returnUserInfoFromHandle (handle) {
+//   // Step 2: Get "access_token" from Firebase with "data.team_id"
+//   let accounts = db.ref('/slack_accounts/' + data.team_id)
+//   accounts.once('value').then(function (snapshot) {
+//     let access_token = snapshot.child('access_token').val()
+//     _getUserList(access_token)
+//   })
+//
+//   // Step 3: Get user list using "access_token"
+//   function _getUserList (access_token) {
+//     request.post({
+//       url: 'https://slack.com/api/users.list',
+//       form: {
+//         token: access_token
+//       }
+//     }, function (err, httpResponse, body) {
+//       if (err) {
+//         // TODO: Handle error
+//         return
+//       }
+//       // TODO: Step 4 here
+//       _getRecipientInfo(thisUserName, JSON.parse(body).members)
+//     })
+//   }
+//
+//   // Step 4: TODO: Parse through member list to find member with "name" that equals handle we've parsed out of text
+//   function _getRecipientInfo (userName, userList) {
+//     for (var i = 0; i < userList.length; i++) {
+//       if (userList[i].name === userName) {
+//         console.log('This is our user:', userList[i])
+//       }
+//     }
+//   }
+// }
