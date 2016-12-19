@@ -510,7 +510,7 @@ function _returnNewPrize (index, recipientHandle) {
     }
 
     const getNextPrize = {
-      'text': 'Let\'s find a prize for *' + recipientHandle + '*.', // products[pointer].bot_text,
+      'text': 'Teehee ☺️. Let\'s find a prize for *' + recipientHandle + '*...', // products[pointer].bot_text,
       'attachments': [
         {
           // NOTE: The callback_id is the only chance we have to get data back from the message it's coming from. So we need to stuff the current product SKU and the recipient's handle into it. Then we need to parse it into two values and pass it back into this function every time. Using a SINGLE SPACE to separate these.
