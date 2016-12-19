@@ -320,7 +320,9 @@ api.post('/yay-message-buttons', function (req, res) {
     })
   } else if (data.actions[0].name === 'choose_next_prize') {
     // Get a new gift using our global method.
-    _returnNewPrize(data.actions[0].value).then(function (val) {
+    let handle = _returnUserName(data.callback_id)
+    console.log(data.callback_id)
+    _returnNewPrize(data.actions[0].value, handle).then(function (val) {
       res.send(val)
     }).catch(function (err) {
       // TODO: Handle error
@@ -508,10 +510,12 @@ function _returnNewPrize (index, recipientHandle) {
     }
 
     const getNextPrize = {
-      'text': 'So we wanna buy a gift for *' + recipientHandle + '*. How about this?', // products[pointer].bot_text,
+      'text': 'Let\'s find a prize for *' + recipientHandle + '*', // products[pointer].bot_text,
       'attachments': [
         {
-          'callback_id': products[pointer].skus.data[0].id,
+          // NOTE: The callback_id is the only chance we have to get data back from the message it's coming from. So we need to stuff the current product SKU and the recipient's handle into it. Then we need to parse it into two values and pass it back into this function every time. Using a SINGLE SPACE to separate these.
+          'callback_id': products[pointer].skus.data[0].id + ' ' + recipientHandle,
+          'pretext': 'How about this one?', // TODO: Bot text stuff goes here
           'fallback': 'Required plain-text summary of the attachment.',
           'color': '#59FFBA',
           'title': products[pointer].name + ' by ' + products[pointer].metadata.brand,
@@ -549,7 +553,7 @@ function _returnNewPrize (index, recipientHandle) {
 /* *******************************************
     METHOD: PURCHASE THIS PRIZE
 *********************************************/
-function _purchaseThisPrize (sku, team_id, purchaser) {
+function _purchaseThisPrize (callback_id, team_id, purchaser) {
   // Return a promise that resolves with the new gift. This can be sent back to Slack via res.send(val)
   return new Promise(function (resolve, reject) {
     // Lookup "stripe_id" from Firebase using "team_id", in order to pass to purchase function
@@ -558,14 +562,16 @@ function _purchaseThisPrize (sku, team_id, purchaser) {
     accounts.once('value').then(function (snapshot) {
       stripe_id = snapshot.child('stripe_id').val()
       // Place the order using the sku and stripe_id
+      const sku = _parseSkuFromCallback(callback_id)
+      const recipientHandle = _returnUserName(callback_id)
       stripe.orders.create({
         currency: 'usd',
         customer: stripe_id,
         metadata: {
           purchaser_id: purchaser.id,
-          purchaser_name: purchaser.name
+          purchaser_name: purchaser.name,
+          recipient_handle: recipientHandle
           // recipient_name: recipient.name,
-          // recipient_handle: recipient.handle
           // recipient_id: recipient.id
         },
         items: [
@@ -598,6 +604,15 @@ function _returnUserName (text) {
   }
   return userName[0]
   // return userName[0].substr(1) // This removes the '@' symbol, but I decided to keep it
+}
+
+// Parse the user name off the string, and then use THAT to parse off the SKU
+function _parseSkuFromCallback (text) {
+  const userName = _returnUserName(text)
+  // NOTE: We're replacing the @handle PLUS the space before it
+  const sku = text.replace(' ' + userName, '')
+  console.log(sku)
+  return sku
 }
 
 /* *******************************************
