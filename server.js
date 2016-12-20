@@ -528,7 +528,13 @@ function _returnNewPrize (index, recipientHandle) {
               'text': 'Yay, that\'s perfect!',
               'type': 'button',
               'style': 'primary',
-              'value': pointer
+              'value': pointer,
+              'confirm': {
+                'title': 'Confirm the Deets',
+                'text': products[pointer].name + ' ($' + ((products[pointer].skus.data[0].price) / 100).toFixed(2) + ') for immediate delivery to the very deserving ' + recipientHandle + '.',
+                'ok_text': 'Place Order',
+                'dismiss_text': 'Cancel'
+              }
             },
             {
               'name': 'choose_next_prize',
