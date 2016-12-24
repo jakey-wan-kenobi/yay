@@ -2,7 +2,6 @@ let express = require('express')
 let app = express()
 let https = require('https')
 let http = require('http')
-let request = require('request')
 let axios = require('axios')
 let bodyParser = require('body-parser')
 let jwt = require('jsonwebtoken')
@@ -312,11 +311,16 @@ api.post('/yay-message-buttons', function (req, res) {
   if (data.actions[0].name === 'did_choose_prize') {
     // Pass the "callback_id" key which contains the appropriate product SKU, plus the "team_id", to our global purchase method.
     _purchaseThisPrize(data.callback_id, data.team.id, data.user).then(function (val) {
-      console.log('this should have an order value!', val)
-      res.send('great, we did it!')
+      res.send('Great, we did it! You\'re prize will arrive soon!')
     }).catch(function (err) {
-      // TODO: Handle error
-      console.log(err)
+      // Handle missing credit card error
+      if (err === 'missing_credit_card') {
+        console.log(true)
+        res.send('Oops, there\'s no payment info on your account. Go to https://yay.hintsy.io/account to add one!')
+        return
+      }
+      // Handle generic error
+      res.send('Sorry, there was a problem placing your order! Please try again, and contact support if it still doesn\'t work: help@hintsygifts.com.')
     })
   } else if (data.actions[0].name === 'choose_next_prize') {
     // Get a new gift using our global method.
@@ -531,7 +535,7 @@ function _returnNewPrize (index, recipientHandle) {
               'value': pointer,
               'confirm': {
                 'title': 'Confirm the Deets',
-                'text': products[pointer].name + ' ($' + ((products[pointer].skus.data[0].price) / 100).toFixed(2) + ') for immediate delivery to the very deserving ' + recipientHandle + '.',
+                'text': products[pointer].name + ' ($' + ((products[pointer].skus.data[0].price) / 100).toFixed(2) + ') for immediate delivery to ' + recipientHandle + '.',
                 'ok_text': 'Place Order',
                 'dismiss_text': 'Cancel'
               }
@@ -567,6 +571,12 @@ function _purchaseThisPrize (callback_id, team_id, purchaser) {
     let stripe_id = ''
     accounts.once('value').then(function (snapshot) {
       stripe_id = snapshot.child('stripe_id').val()
+      if (!stripe_id) {
+        // TODO: Handle no credit card
+        console.log('no credit card')
+        reject('missing_credit_card')
+        return false
+      }
       // Place the order using the sku and stripe_id
       const sku = _parseSkuFromCallback(callback_id)
       const recipientHandle = _returnUserName(callback_id)

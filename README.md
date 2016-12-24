@@ -1,6 +1,14 @@
 
 ### Thoughts
 
+**Why is 'request' still a dependency? We're failing without it, but don't seem to use it anywhere?**
+
+
+**Process for Deploying to Remote Server**
+1. Clone bare repo on the server itself (so it's just .git file sitting in there)
+2. Then create a script that literally just checks out the repo into the folder you want it to be in
+
+
 **We're going to need our own authentication system.** We can use Slack/OAuth to allow Yay to access Slack information. But how do we identify our users when the requests aren't coming directly from Slack, with the relevant tokens included? For example, how do we log them in at yay.hintsy.io and allow them to change their credit card or address?
 
 I think the best process is:
