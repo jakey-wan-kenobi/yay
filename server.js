@@ -315,8 +315,12 @@ api.post('/yay-message-buttons', function (req, res) {
     }).catch(function (err) {
       // Handle missing credit card error
       if (err === 'missing_credit_card') {
-        console.log(true)
         res.send('Oops, there\'s no payment info on your account. Go to https://yay.hintsy.io/account to add one!')
+        return
+      }
+      // Handle missing shipping address
+      if (err.param === 'shipping') {
+        res.send('Noooo! You need to add a shipping address to your account before you can place orders: https://yay.hintsy.io/account.')
         return
       }
       // Handle generic error
