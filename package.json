@@ -4,7 +4,8 @@
   "description": "",
   "main": "server.js",
   "scripts": {
-    "test": ""
+    "test": "",
+    "up": "rsync -a . root@yay.hintsy.io:../home/yay --exclude 'node_modules'"
   },
   "author": "",
   "license": "ISC",

@@ -3,6 +3,17 @@
 
 **Why is 'request' still a dependency? We're failing without it, but don't seem to use it anywhere?**
 
+#### `npm run up` will upload files from local yay directory to /home/yay
+
+This allows you to...
+
+1. Run `nodemon server.js` on the server
+2. Make your changes locally and save them
+3. Go into local terminal and run `npm run up`
+4. Watch the server restart on the remote (live) server
+
+So now there's no need to sync local and remote scripts by copy/pasting. Next step would be to auto-upload the changes on save (either a watch script, or with something like save-commands for atom editor). 
+
 
 **Process for Deploying to Remote Server**
 1. Clone bare repo on the server itself (so it's just .git file sitting in there)
