@@ -312,6 +312,9 @@ api.post('/yay-message-buttons', function (req, res) {
     // Pass the "callback_id" key which contains the appropriate product SKU, plus the "team_id", to our global purchase method.
     _purchaseThisPrize(data.callback_id, data.team.id, data.user).then(function (val) {
       res.send('Great, we did it! You\'re prize will arrive soon!')
+      console.log('order value', val)
+      // TODO: Place the order in a message queue that will send email to purchaser (receipt) and to recipient (request for address)
+      // TODO: Ask if user would like us to alert the channel that this purchase has been made. Like a cool hint. Don't worry, we'll play it cool.
     }).catch(function (err) {
       // Handle missing credit card error
       if (err === 'missing_credit_card') {
@@ -335,7 +338,7 @@ api.post('/yay-message-buttons', function (req, res) {
   } else if (data.actions[0].name === 'choose_next_prize') {
     // Get a new gift using our global method.
     let handle = _returnUserName(data.callback_id)
-    console.log(data.callback_id)
+    // console.log(data.callback_id)
     _returnNewPrize(data.actions[0].value, handle).then(function (val) {
       res.send(val)
     }).catch(function (err) {
@@ -431,7 +434,7 @@ function _createNewStripeCustomer (card, auth, shipping) {
 
 // Update an existing Stripe customer with the credit card they've just added.
 function _saveToExistingStripeCustomer (stripeCheck, card, auth, shipping) {
-  console.log(shipping, stripeCheck.stripe_id)
+  // console.log(shipping, stripeCheck.stripe_id)
   stripe.customers.update(stripeCheck.stripe_id, {
     // Note: The following two keys are conditional, because we use this route to handle both credit card and address.
     source: card ? card.id : undefined,
@@ -446,7 +449,7 @@ function _saveToExistingStripeCustomer (stripeCheck, card, auth, shipping) {
       return
     }
     // TODO: Sucess message. Not saving to Firebase because we saved default card to Stripe. We'll just poll Stripe API if we need that data.
-    console.log('success!', customer)
+    // console.log('success!', customer)
   })
 }
 
@@ -590,7 +593,7 @@ function _purchaseThisPrize (callback_id, team_id, purchaser) {
       stripe_id = snapshot.child('stripe_id').val()
       if (!stripe_id) {
         // TODO: Handle no credit card
-        console.log('no credit card')
+        // console.log('no credit card')
         reject('missing_credit_card')
         return false
       }
@@ -652,7 +655,7 @@ function _parseSkuFromCallback (text) {
   const userName = _returnUserName(text)
   // NOTE: We're replacing the @handle PLUS the space before it
   const sku = text.replace(' ' + userName, '')
-  console.log(sku)
+  // console.log(sku)
   return sku
 }
 
