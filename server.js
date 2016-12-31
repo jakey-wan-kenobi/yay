@@ -318,12 +318,18 @@ api.post('/yay-message-buttons', function (req, res) {
         res.send('Oops, there\'s no payment info on your account. Go to https://yay.hintsy.io/account to add one!')
         return
       }
-      // Handle missing shipping address
+      // TODO: We're going to get the shipping address after the fact. So we need to put a fake address in here as a placeholder so we can still charge for the order. The user should NEVER see this error actually.
       if (err.param === 'shipping') {
         res.send('Noooo! You need to add a shipping address to your account before you can place orders: https://yay.hintsy.io/account.')
         return
       }
+      // Handle sold out error. This should never happen, but just in case it does, we'll handle it.
+      if (err.code === 'out_of_inventory') {
+        res.send('Noooo! I literally just sold out of that product. That never happens, I swear. This is awkward. Try something else?')
+        return
+      }
       // Handle generic error
+      console.log(err)
       res.send('Sorry, there was a problem placing your order! Please try again, and contact support if it still doesn\'t work: help@hintsygifts.com.')
     })
   } else if (data.actions[0].name === 'choose_next_prize') {
@@ -578,7 +584,7 @@ function _purchaseThisPrize (callback_id, team_id, purchaser) {
   // Return a promise that resolves with the new gift. This can be sent back to Slack via res.send(val)
   return new Promise(function (resolve, reject) {
     // Lookup "stripe_id" from Firebase using "team_id", in order to pass to purchase function
-    let accounts = db.ref('/slack_accounts/' + team_id)
+    let accounts = db.ref('/slack_accounts_users/' + team_id + '/' + purchaser.id)
     let stripe_id = ''
     accounts.once('value').then(function (snapshot) {
       stripe_id = snapshot.child('stripe_id').val()
@@ -597,7 +603,8 @@ function _purchaseThisPrize (callback_id, team_id, purchaser) {
         metadata: {
           purchaser_id: purchaser.id,
           purchaser_name: purchaser.name,
-          recipient_handle: recipientHandle
+          recipient_handle: recipientHandle,
+          team_id: team_id
           // recipient_name: recipient.name,
           // recipient_id: recipient.id
         },
@@ -606,7 +613,14 @@ function _purchaseThisPrize (callback_id, team_id, purchaser) {
             type: 'sku',
             parent: sku
           }
-        ]
+        ],
+        // NOTE: This is placeholder becuase it's required by stripe API. We're going to email the user to get this info directly, after the purchase.
+        shipping: {
+          name: 'Placeholder Name',
+          address: {
+            line1: 'Placeholder Street'
+          }
+        }
       }, function (err, order) {
         if (err) {
           reject(err)
