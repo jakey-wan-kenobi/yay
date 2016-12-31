@@ -373,7 +373,7 @@ api.route('/save-order-details')
       res.send(403)
       return
     }
-    // Check whether stripe_id exists, and then decide how to process data recieved (may be credit card token from Stripe, or shipping address data)
+    // Check whether stripe_id exists for this user, and then decide how to process data recieved (may be credit card token from Stripe, or shipping address data)
     co(function * () {
       let stripeIDCheck = yield _checkForStripeID(decodedJWT)
       _processDataConditionally(stripeIDCheck, creditCard, decodedJWT, shipping)
@@ -394,10 +394,10 @@ function _processDataConditionally (stripeCheck, card, auth, shipping) {
   }
 }
 
-// Create a new Stripe customer and save to Firebase
+// Create a new Stripe customer and save to Firebase, under that user's team_id/user_id
 function _createNewStripeCustomer (card, auth, shipping) {
   stripe.customers.create({
-    description: 'Slack team ' + auth.team_id,
+    description: 'Slack team ' + auth.team_id + ', User ' + auth.user_id,
     metadata: {
       user_id: auth.user_id,
       team_id: auth.team_id
@@ -416,14 +416,14 @@ function _createNewStripeCustomer (card, auth, shipping) {
       console.log(err)
     }
     // TODO: Save stripe ID to Firebase
-    let account = db.ref('/slack_accounts/' + auth.team_id)
+    let account = db.ref('/slack_accounts_users/' + auth.team_id + '/' + auth.user_id)
     account.update({
       stripe_id: customer.id
     })
   })
 }
 
-// Update an existing Stripe customer
+// Update an existing Stripe customer with the credit card they've just added.
 function _saveToExistingStripeCustomer (stripeCheck, card, auth, shipping) {
   console.log(shipping, stripeCheck.stripe_id)
   stripe.customers.update(stripeCheck.stripe_id, {
@@ -444,19 +444,26 @@ function _saveToExistingStripeCustomer (stripeCheck, card, auth, shipping) {
   })
 }
 
-// Check if customer already has a stripe_id
+// Check if this specific user already has a stripe_id. Take the JWT auth data, determine whether this user already has a stripe_id, and then return that stripe_id along with a boolean indicating whether it has one.
 function _checkForStripeID (auth) {
   let stripeDataCheck = {}
   let response = new Promise(function (resolve, reject) {
-    // Check whether a stripe_id already exists for this team
-    let accounts = db.ref('/slack_accounts/' + auth.team_id)
-    // Check whether team already exists in our Firebase
+    // Check whether a stripe_id already exists for this user
+    let accounts = db.ref('/slack_accounts_users/' + auth.team_id + '/' + auth.user_id)
+    // Check whether user already has a stripe_id in our Firebase
     accounts.once('value').then(function (snapshot) {
-      let team = snapshot.val()
-      switch (typeof team.stripe_id === 'string') {
+      let user = snapshot.val()
+      // If we don't have a user, we already know there's no stripe_id, resolve now
+      if (!user) {
+        stripeDataCheck.has_stripe_id = 'no'
+        resolve(stripeDataCheck)
+        return stripeDataCheck
+      }
+      // If the user exists at this node in DB, check whether it has a stripe_id already and return appropriately
+      switch (typeof user.stripe_id === 'string') {
         case true:
           stripeDataCheck.has_stripe_id = 'yes'
-          stripeDataCheck.stripe_id = team.stripe_id
+          stripeDataCheck.stripe_id = user.stripe_id
           break
         case undefined:
           stripeDataCheck.has_stripe_id = 'no'
