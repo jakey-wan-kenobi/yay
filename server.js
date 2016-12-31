@@ -313,7 +313,7 @@ api.post('/yay-message-buttons', function (req, res) {
     _purchaseThisPrize(data.callback_id, data.team.id, data.user).then(function (val) {
       res.send('Great, we did it! You\'re prize will arrive soon!')
       console.log('order value', val)
-      // TODO: Place the order in a message queue that will send email to purchaser (receipt) and to recipient (request for address)
+      // TODO: Pass this entire order object (val) to a message queue that will send email to purchaser (receipt) and to recipient (request for address)
       // TODO: Ask if user would like us to alert the channel that this purchase has been made. Like a cool hint. Don't worry, we'll play it cool.
     }).catch(function (err) {
       // Handle missing credit card error
@@ -696,3 +696,40 @@ function _parseSkuFromCallback (text) {
 //     }
 //   }
 // }
+
+/* *******************************************
+    MESSAGE QUEUES
+*********************************************/
+// let queue = express()
+// queue.listen('localhost:5672', function () {
+console.log('server is set up now')
+var q = 'tasks'
+
+var open = require('amqplib').connect('amqp://yay.hintsy.io:5672')
+
+// Publisher
+open.then(function (conn) {
+  return conn.createChannel()
+}).then(function (ch) {
+  return ch.assertQueue(q).then(function (ok) {
+    console.log('did we make it here?')
+    return ch.sendToQueue(q, new Buffer('something to do'))
+  })
+}).catch(function (err) {
+  console.log('This is our error', err)
+})
+
+// Consumer
+open.then(function (conn) {
+  return conn.createChannel()
+}).then(function (ch) {
+  return ch.assertQueue(q).then(function (ok) {
+    return ch.consume(q, function (msg) {
+      if (msg !== null) {
+        console.log(msg.content.toString())
+        ch.ack(msg)
+      }
+    })
+  })
+}).catch(console.warn)
+// })
