@@ -743,7 +743,7 @@ function _sendPurchaseEmails (order) {
         // to: name + ' <' + email + '>',
         // TODO: Uncomment the above to send the actual recipient
         to: 'Jake Allen <jacobrobertallen@gmail.com>',
-        subject: 'You get a prize! 🎉 🙌 🦄 Let us know where to ship it.',
+        subject: 'You get a prize! 🎉 🙌 🦄  Let us know where to ship it.',
         html: compiledTmp
       }
       // Send the mailgun email object
@@ -780,41 +780,3 @@ function _parseSkuFromCallback (text) {
   // console.log(sku)
   return sku
 }
-
-/* *******************************************
-    METHOD: RETURN USER info FROM HANDLE
-*********************************************/
-// function _returnUserInfoFromHandle (handle) {
-//   // Step 2: Get "access_token" from Firebase with "data.team_id"
-//   let accounts = db.ref('/slack_accounts/' + data.team_id)
-//   accounts.once('value').then(function (snapshot) {
-//     let access_token = snapshot.child('access_token').val()
-//     _getUserList(access_token)
-//   })
-//
-//   // Step 3: Get user list using "access_token"
-//   function _getUserList (access_token) {
-//     request.post({
-//       url: 'https://slack.com/api/users.list',
-//       form: {
-//         token: access_token
-//       }
-//     }, function (err, httpResponse, body) {
-//       if (err) {
-//         // TODO: Handle error
-//         return
-//       }
-//       // TODO: Step 4 here
-//       _getRecipientInfo(thisUserName, JSON.parse(body).members)
-//     })
-//   }
-//
-//   // Step 4: TODO: Parse through member list to find member with "name" that equals handle we've parsed out of text
-//   function _getRecipientInfo (userName, userList) {
-//     for (var i = 0; i < userList.length; i++) {
-//       if (userList[i].name === userName) {
-//         console.log('This is our user:', userList[i])
-//       }
-//     }
-//   }
-// }
