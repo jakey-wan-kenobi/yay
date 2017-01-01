@@ -651,7 +651,8 @@ function _sendPurchaseEmails (order) {
     let recipient_handle = order.metadata.recipient_handle
     // Get the purchaser's info (name and email address) from the Slack API using the team access_token, then send them the receipt email
     _getPurchaserData(purchaser_id, access_token).then(function (val) {
-      _sendReceiptEmail(val.data.user.real_name, val.data.user.profile.email)
+      // TODO: Uncommen the below to send the receipt email to the purchaser (don't want to keep sending them)
+      // _sendReceiptEmail(val.data.user.real_name, val.data.user.profile.email)
     }).catch(function (err) {
       console.log(err)
     })
@@ -662,10 +663,9 @@ function _sendPurchaseEmails (order) {
       for (var i = 0; i < users.length; i++) {
         // NOTE: The data returned by Slack API doesn't include the '@' symbold for the 'name' field (which is what they call the user handle)
         if ('@' + users[i].name === recipient_handle) {
-          console.log('This is the recipient user', users[i])
           let recipient = users[i]
-          // Send the email to our recipient
-          _sendAddressEmail(recipient.profile.real_name, recipient.profile.email)
+          // Send the address email to our recipient. NOTE: Is order.id a side effect here? Because we didn't pass it to _getRecipientData?
+          _sendAddressEmail(recipient.profile.real_name, recipient.profile.email, order.id)
         }
       }
     }).catch(function (err) {
@@ -696,7 +696,7 @@ function _sendPurchaseEmails (order) {
     return response
   }
 
-  // Send the actual receipt email, using the name and email we retrieved from Slack
+  // Send the actual receipt email, using the name and email we retrieved from Slack TODO: Make this the real receipt email template
   function _sendReceiptEmail (name, email) {
     // Create the mailgun email object
     var emailObj = {
@@ -705,7 +705,7 @@ function _sendPurchaseEmails (order) {
       subject: 'Your Yay Prize is Purchased!',
       html: 'Purchase was made!'
     }
-    // Send the mailgun email object
+    // Send the mailgun email object TODO: Actually send a link to request the user's email address
     mailgun.messages().send(emailObj, function (error, body) {
       if (body) {
         console.log('success')
@@ -716,13 +716,15 @@ function _sendPurchaseEmails (order) {
   }
 
   // Send the actual address email, using the name and email we retrieved from Slack
-  function _sendAddressEmail (name, email) {
+  function _sendAddressEmail (name, email, orderID) {
     // Create the mailgun email object
     var emailObj = {
       from: 'Hintsy <no-reply@mail.hintsygifts.com>',
-      to: name + ' <' + email + '>',
+      // to: name + ' <' + email + '>',
+      // TODO: Uncomment the above to send the actual recipient
+      to: 'Jake Allen <jacobrobertallen@gmail.com>',
       subject: 'Your getting a prize! We need to know where to ship it.',
-      html: 'You\'re getting a prize!'
+      html: 'You\'re getting a prize!' + orderID
     }
     // Send the mailgun email object
     mailgun.messages().send(emailObj, function (error, body) {
