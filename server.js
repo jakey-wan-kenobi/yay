@@ -641,7 +641,11 @@ function _purchaseThisPrize (callback_id, team_id, purchaser) {
 /* *******************************************
     METHOD: SEND PURCHASE RECEIPT TO PURCHASER
 *********************************************/
+// Using doT.js for email template compilation: http://olado.github.io/doT/index.html
+const dot = require('dot')
+const fs = require('fs')
 let mailgun = require('mailgun-js')({apiKey: process.env.MAILGUN_KEY, domain: 'mail.hintsygifts.com'})
+
 function _sendPurchaseEmails (order) {
   // Get team access_token from Firebase using the team_id
   let teamAccountToken = db.ref('/slack_accounts/' + order.metadata.team_id + '/access_token')
@@ -717,22 +721,39 @@ function _sendPurchaseEmails (order) {
 
   // Send the actual address email, using the name and email we retrieved from Slack
   function _sendAddressEmail (name, email, orderID) {
-    // Create the mailgun email object
-    var emailObj = {
-      from: 'Hintsy <no-reply@mail.hintsygifts.com>',
-      // to: name + ' <' + email + '>',
-      // TODO: Uncomment the above to send the actual recipient
-      to: 'Jake Allen <jacobrobertallen@gmail.com>',
-      subject: 'Your getting a prize! We need to know where to ship it.',
-      html: 'You\'re getting a prize!' + orderID
-    }
-    // Send the mailgun email object
-    mailgun.messages().send(emailObj, function (error, body) {
-      if (body) {
-        console.log('success')
-      } else if (error) {
-        console.log('receipt error:', error)
+    fs.readFile('email-templates/yay-shipping-address.html', function (error, html) {
+      // Catch error
+      if (error) {
+        // TODO: Handle error
+        console.log(error)
+        return
       }
+      // Data object we're going to pass to the template compiler (to populate the email with)
+      let emailData = {
+        name: name,
+        email: email,
+        orderID: orderID
+      }
+      // Compile the email
+      let templateFn = dot.template(html)
+      let compiledTmp = templateFn(emailData)
+      // Create the mailgun email object
+      var emailObj = {
+        from: 'Hintsy <no-reply@mail.hintsygifts.com>',
+        // to: name + ' <' + email + '>',
+        // TODO: Uncomment the above to send the actual recipient
+        to: 'Jake Allen <jacobrobertallen@gmail.com>',
+        subject: 'You get a prize! 🎉 🙌 🦄 Let us know where to ship it.',
+        html: compiledTmp
+      }
+      // Send the mailgun email object
+      mailgun.messages().send(emailObj, function (error, body) {
+        if (body) {
+          console.log('success')
+        } else if (error) {
+          console.log('Shipping address error:', error)
+        }
+      })
     })
   }
 }

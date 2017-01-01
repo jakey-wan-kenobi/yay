@@ -62,7 +62,7 @@
         <tr>
           <td style="box-sizing: border-box; font-family: 'Helvetica Neue', Helvetica, Arial, 'Lucida Grande', sans-serif; font-size: 14px; vertical-align: top;" valign="top">
             <h3 class="align-center" style="color: #353535 !important; font-family: Open Sans, 'Helvetica Neue', Helvetica, Arial, 'Lucida Grande', sans-serif; font-weight: bold; line-height: 1.4em; margin: 0; margin-bottom: 30px; font-size: 18px; text-align: center; text-transform: uppercase;">You get a prize! 👏</h3>
-            <p class="align-center" style="font-family: Open Sans, 'Helvetica Neue', Helvetica, Arial, 'Lucida Grande', sans-serif; font-size: 14px; font-weight: normal; margin: 0; margin-bottom: 15px; text-align: center;">You've a got a prize coming your way. Just add your shipping address and it'll be there in a hot minute, delivered on unicorn-back.</p>
+            <p class="align-center" style="font-family: Open Sans, 'Helvetica Neue', Helvetica, Arial, 'Lucida Grande', sans-serif; font-size: 14px; font-weight: normal; margin: 0; margin-bottom: 15px; text-align: center;">{{=it.name}}, you've a got a prize coming your way. Just add your shipping address and it'll be there in a hot minute, delivered on unicorn-back.</p>
             <div class="align-center yay-button" style="box-sizing: border-box; text-align: center;">
               <table class="btn btn-primary" cellpadding="0" cellspacing="0" style="box-sizing: border-box; border-collapse: separate !important; mso-table-lspace: 0pt; mso-table-rspace: 0pt; width: 100%;" width="100%">
                 <tr>
@@ -70,7 +70,7 @@
                     <table cellpadding="0" cellspacing="0" style="box-sizing: border-box; border-collapse: separate !important; mso-table-lspace: 0pt; mso-table-rspace: 0pt; width: auto;">
                       <tr>
                         <td style="box-sizing: border-box; font-family: 'Helvetica Neue', Helvetica, Arial, 'Lucida Grande', sans-serif; font-size: 14px; vertical-align: top; border-radius: 5px; text-align: center; background-color: #53ffbe;" valign="top" bgcolor="#53ffbe" align="center">
-                          <a href="https://yay.hintsy.io/account" style="box-sizing: border-box; display: inline-block; text-decoration: none; box-shadow: 4px 4px rgba(0, 0, 0, 0.1); border: solid 1px #264CBD; border-radius: 5px; cursor: pointer; text-transform: capitalize; font-size: 14px; font-weight: bold; margin: 0; padding: 12px 25px; color: #2d2d2d; background-color: #53ffbe; border-color: #53ffbe;">Add Shipping Address</a>
+                          <a href="https://yay.hintsy.io/account?order={{=it.orderID}}" style="box-sizing: border-box; display: inline-block; text-decoration: none; box-shadow: 4px 4px rgba(0, 0, 0, 0.1); border: solid 1px #264CBD; border-radius: 5px; cursor: pointer; text-transform: capitalize; font-size: 14px; font-weight: bold; margin: 0; padding: 12px 25px; color: #2d2d2d; background-color: #53ffbe; border-color: #53ffbe;">Add Shipping Address</a>
                         </td>
                       </tr>
                     </table>
@@ -87,7 +87,7 @@
             			</table>
             		</td>
             	</tr>
-            </table>            <p class="fine-print align-center" style="font-family: Open Sans, 'Helvetica Neue', Helvetica, Arial, 'Lucida Grande', sans-serif; font-weight: normal; margin: 0; margin-bottom: 15px; font-size: 12px; text-align: center;"><b>Heads Up: </b>If the button isn't working, you can go directly to <a href="https://yay.hintsy.io/account" target="_blank" style="box-sizing: border-box; text-decoration: underline; color: #ff6199;">https://yay.hintsy.io/account</a> to add your shipping address. Don't share this link—anybody who has it can add a shipping address to this order.</p>
+            </table>            <p class="fine-print align-center" style="font-family: Open Sans, 'Helvetica Neue', Helvetica, Arial, 'Lucida Grande', sans-serif; font-weight: normal; margin: 0; margin-bottom: 15px; font-size: 12px; text-align: center;"><b>Heads Up: </b>If the button isn't working, you can go directly to <a href="https://yay.hintsy.io/account?order={{=it.orderID}}" target="_blank" style="box-sizing: border-box; text-decoration: underline; color: #ff6199;">https://yay.hintsy.io/account?order={{=it.orderID}}</a> to add your shipping address. Don't share this link—anybody who has it can add a shipping address to this order.</p>
           </td>
         </tr>
       </table>
