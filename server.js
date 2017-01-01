@@ -40,14 +40,17 @@ function approveDomains (opts, certs, cb) {
 }
 
 // Serve website
-app.get('/', function (req, res) {
-  res.send('<a href="https://slack.com/oauth/authorize?scope=commands,bot,users:read&client_id=104436581472.112407214276"><img alt="Add to Slack" height="40" width="139" src="https://platform.slack-edge.com/img/add_to_slack.png" srcset="https://platform.slack-edge.com/img/add_to_slack.png 1x, https://platform.slack-edge.com/img/add_to_slack@2x.png 2x" /></a><a href="https://slack.com/oauth/authorize?scope=identity.basic&client_id=104436581472.112407214276"><img alt="Sign in with Slack" src="https://api.slack.com/img/sign_in_with_slack.png" srcset="https://platform.slack-edge.com/img/sign_in_with_slack.png 1x, https://platform.slack-edge.com/img/sign_in_with_slack@2x.png 2x"/></a>')
-})
+// app.get('/', function (req, res) {
+//   res.send('<a href="https://slack.com/oauth/authorize?scope=commands,bot,users:read&client_id=104436581472.112407214276"><img alt="Add to Slack" height="40" width="139" src="https://platform.slack-edge.com/img/add_to_slack.png" srcset="https://platform.slack-edge.com/img/add_to_slack.png 1x, https://platform.slack-edge.com/img/add_to_slack@2x.png 2x" /></a><a href="https://slack.com/oauth/authorize?scope=identity.basic&client_id=104436581472.112407214276"><img alt="Sign in with Slack" src="https://api.slack.com/img/sign_in_with_slack.png" srcset="https://platform.slack-edge.com/img/sign_in_with_slack.png 1x, https://platform.slack-edge.com/img/sign_in_with_slack@2x.png 2x"/></a>')
+// })
 
 /* *******************************************
   SERVE YAY WEBSITE
 *********************************************/
+// NOTE: Strangeness here. Not sure why we have to serve each page and we can't use a *. Our 404 page won't actually get caught from the app, but from here. Strange.
+app.use('/', express.static('../dist'))
 app.use('/account', express.static('../dist'))
+app.use('/orders', express.static('../dist'))
 app.use('/static', express.static(__dirname + '/../dist/static'))
 
 // Create website servers
@@ -780,3 +783,8 @@ function _parseSkuFromCallback (text) {
   // console.log(sku)
   return sku
 }
+
+// Return our 404 page -- this is a catch all for everything that didn't get caught above. See the note on the strangeness.
+app.use('/', function (req, res, next) {
+  res.status(404).send('Page Not Found')
+})
