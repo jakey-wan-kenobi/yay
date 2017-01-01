@@ -314,6 +314,9 @@ api.post('/yay-message-buttons', function (req, res) {
       res.send('Great, we did it! You\'re prize will arrive soon!')
       console.log('order value', val)
       // TODO: Place the order in a message queue that will send email to purchaser (receipt) and to recipient (request for address)
+      // Send email to purchaser
+      _sendPurchaseReceipt(val)
+        // Send email to recipient (requesting their addrress)
       // TODO: Ask if user would like us to alert the channel that this purchase has been made. Like a cool hint. Don't worry, we'll play it cool.
     }).catch(function (err) {
       // Handle missing credit card error
@@ -633,6 +636,30 @@ function _purchaseThisPrize (callback_id, team_id, purchaser) {
         return order
       })
     })
+  })
+}
+
+/* *******************************************
+    METHOD: SEND PURCHASE RECEIPT TO PURCHASER
+*********************************************/
+let mailgun = require('mailgun-js')({apiKey: process.env.MAILGUN_KEY, domain: 'mail.hintsygifts.com'})
+function _sendPurchaseReceipt (order) {
+  console.log(order)
+  // Create the mailgun email object
+  var emailObj = {
+    from: 'Hintsy <no-reply@mail.hintsygifts.com>',
+    to: 'Jake Allen <jacobrobertallen@gmail.com>',
+    subject: 'Your gift has shipped! 🚚 ',
+    html: 'Purchase was made!'
+  }
+
+  // Send the mailgun email object
+  mailgun.messages().send(emailObj, function (error, body) {
+    if (body) {
+      console.log('success')
+    } else if (error) {
+      console.log('receipt error:', error)
+    }
   })
 }
 

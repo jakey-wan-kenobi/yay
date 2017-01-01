@@ -12,7 +12,7 @@ This allows you to...
 3. Go into local terminal and run `npm run up`
 4. Watch the server restart on the remote (live) server
 
-So now there's no need to sync local and remote scripts by copy/pasting. Next step would be to auto-upload the changes on save (either a watch script, or with something like save-commands for atom editor). 
+So now there's no need to sync local and remote scripts by copy/pasting. Next step would be to auto-upload the changes on save (either a watch script, or with something like save-commands for atom editor), so we run the `npm run up` command on save.
 
 
 **Process for Deploying to Remote Server**

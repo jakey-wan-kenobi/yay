@@ -19,6 +19,7 @@
     "firebase-admin": "^4.0.3",
     "jsonwebtoken": "^7.2.1",
     "letsencrypt-express": "^2.0.5",
+    "mailgun-js": "^0.7.15",
     "pm2": "^2.1.6",
     "request": "^2.79.0",
     "slackbots": "^0.5.3",
