@@ -352,7 +352,7 @@ api.post('/yay-message-buttons', function (req, res) {
 })
 
 /* *******************************************
-    SAVE ORDER DETAILS (CREDIT CARD OR SHIPPING ADDRESS)
+    SAVE CREDIT CARD TODO: Edit this so it only accounts for credit card (we're doing addresses per-order now)
 *********************************************/
 api.use(bodyParser.json())
 api.route('/save-order-details')
@@ -490,6 +490,27 @@ function _checkForStripeID (auth) {
   })
   return response
 }
+
+/* *******************************************
+    ADD SHIPPING ADDRESS TO STRIPE ORDER
+*********************************************/
+api.use(bodyParser.urlencoded({ extended: false }))
+api.route('/add-shipping-address')
+  .all(function (req, res, next) {
+    res.header('Access-Control-Allow-Origin', 'https://yay.hintsy.io')
+    res.header('Access-Control-Allow-Headers', 'X-Requested-With, Content-Type, Origin, Accept, Bearer')
+    next()
+  })
+  // This options route is required for the preflight done by the browser
+  .options(function (req, res, next) {
+    res.status(200).end()
+    // next()
+  })
+  .post(function (req, res, next) {
+    const address = req.body
+    console.log(address, req.query.order)
+    res.send('got it!')
+  })
 
 /* *******************************************
     METHOD: RETURN NEW PRIZE
