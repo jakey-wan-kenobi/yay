@@ -518,9 +518,17 @@ api.route('/add-shipping-address')
         address_postal_code: address.postal_code,
         address_state: address.state
       }
+    }, function (err, data) {
+      console.log(err, data)
+      if (err) {
+        // TODO: Handle this error. Something went wrong, tell the user.
+        res.status(500).send(err)
+        console.log(err)
+        return
+      }
+      // Send success response to client.
+      res.send(200)
     })
-    // TODO: Send back a response to user
-    res.send('got it!')
   })
 
 /* *******************************************
