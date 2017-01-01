@@ -312,10 +312,9 @@ api.post('/yay-message-buttons', function (req, res) {
     // Pass the "callback_id" key which contains the appropriate product SKU, plus the "team_id", to our global purchase method.
     _purchaseThisPrize(data.callback_id, data.team.id, data.user).then(function (val) {
       res.send('Great, we did it! You\'re prize will arrive soon!')
-      console.log('order value', val)
       // TODO: Place the order in a message queue that will send email to purchaser (receipt) and to recipient (request for address)
       // Send email to purchaser
-      _sendPurchaseReceipt(val)
+      _sendPurchaseEmails(val)
         // Send email to recipient (requesting their addrress)
       // TODO: Ask if user would like us to alert the channel that this purchase has been made. Like a cool hint. Don't worry, we'll play it cool.
     }).catch(function (err) {
@@ -643,15 +642,32 @@ function _purchaseThisPrize (callback_id, team_id, purchaser) {
     METHOD: SEND PURCHASE RECEIPT TO PURCHASER
 *********************************************/
 let mailgun = require('mailgun-js')({apiKey: process.env.MAILGUN_KEY, domain: 'mail.hintsygifts.com'})
-function _sendPurchaseReceipt (order) {
+function _sendPurchaseEmails (order) {
   // Get team access_token from Firebase using the team_id
   let teamAccountToken = db.ref('/slack_accounts/' + order.metadata.team_id + '/access_token')
   teamAccountToken.once('value').then(function (snapshot) {
-    let team_id = snapshot.val()
-    let user_id = order.metadata.purchaser_id
-    // Get the purchaser's info (name and email address) from the Slack API using the team access_token
-    _getPurchaserData(user_id, team_id).then(function (val) {
-      _sendEmail(val.data.user.real_name, val.data.user.profile.email)
+    let access_token = snapshot.val()
+    let purchaser_id = order.metadata.purchaser_id
+    let recipient_handle = order.metadata.recipient_handle
+    // Get the purchaser's info (name and email address) from the Slack API using the team access_token, then send them the receipt email
+    _getPurchaserData(purchaser_id, access_token).then(function (val) {
+      _sendReceiptEmail(val.data.user.real_name, val.data.user.profile.email)
+    }).catch(function (err) {
+      console.log(err)
+    })
+    // Get a list of this team's users so we can match the user handle we have to their user handle, then send the recipient the request for address email
+    _getRecipientData(access_token).then(function (val) {
+      let users = val.data.members
+      // Iterate through the list to find the match between users' handles
+      for (var i = 0; i < users.length; i++) {
+        // NOTE: The data returned by Slack API doesn't include the '@' symbold for the 'name' field (which is what they call the user handle)
+        if ('@' + users[i].name === recipient_handle) {
+          console.log('This is the recipient user', users[i])
+          let recipient = users[i]
+          // Send the email to our recipient
+          _sendAddressEmail(recipient.profile.real_name, recipient.profile.email)
+        }
+      }
     }).catch(function (err) {
       console.log(err)
     })
@@ -669,15 +685,44 @@ function _sendPurchaseReceipt (order) {
     return response
   }
 
-  // Send the actual email, using the name and email we retrieved from Slack
-  function _sendEmail (name, email) {
-    console.log('Sending to', name + ' <' + email + '>')
+  // PROMISE: Get recipient data (using their Slack handle)so we can email them the request for a shipping address.
+  function _getRecipientData (access_token) {
+    let response = axios.post('https://slack.com/api/users.list', qs.stringify({
+      token: access_token
+    })).catch(function (error) {
+      // TODO: Handle error
+      console.log(error)
+    })
+    return response
+  }
+
+  // Send the actual receipt email, using the name and email we retrieved from Slack
+  function _sendReceiptEmail (name, email) {
     // Create the mailgun email object
     var emailObj = {
       from: 'Hintsy <no-reply@mail.hintsygifts.com>',
       to: name + ' <' + email + '>',
       subject: 'Your Yay Prize is Purchased!',
       html: 'Purchase was made!'
+    }
+    // Send the mailgun email object
+    mailgun.messages().send(emailObj, function (error, body) {
+      if (body) {
+        console.log('success')
+      } else if (error) {
+        console.log('receipt error:', error)
+      }
+    })
+  }
+
+  // Send the actual address email, using the name and email we retrieved from Slack
+  function _sendAddressEmail (name, email) {
+    // Create the mailgun email object
+    var emailObj = {
+      from: 'Hintsy <no-reply@mail.hintsygifts.com>',
+      to: name + ' <' + email + '>',
+      subject: 'Your getting a prize! We need to know where to ship it.',
+      html: 'You\'re getting a prize!'
     }
     // Send the mailgun email object
     mailgun.messages().send(emailObj, function (error, body) {
