@@ -644,23 +644,50 @@ function _purchaseThisPrize (callback_id, team_id, purchaser) {
 *********************************************/
 let mailgun = require('mailgun-js')({apiKey: process.env.MAILGUN_KEY, domain: 'mail.hintsygifts.com'})
 function _sendPurchaseReceipt (order) {
-  console.log(order)
-  // Create the mailgun email object
-  var emailObj = {
-    from: 'Hintsy <no-reply@mail.hintsygifts.com>',
-    to: 'Jake Allen <jacobrobertallen@gmail.com>',
-    subject: 'Your gift has shipped! 🚚 ',
-    html: 'Purchase was made!'
+  // Get team access_token from Firebase using the team_id
+  let teamAccountToken = db.ref('/slack_accounts/' + order.metadata.team_id + '/access_token')
+  teamAccountToken.once('value').then(function (snapshot) {
+    let team_id = snapshot.val()
+    let user_id = order.metadata.purchaser_id
+    // Get the purchaser's info (name and email address) from the Slack API using the team access_token
+    _getPurchaserData(user_id, team_id).then(function (val) {
+      _sendEmail(val.data.user.real_name, val.data.user.profile.email)
+    }).catch(function (err) {
+      console.log(err)
+    })
+  })
+
+  // PROMISE: Get the purchasing user's information so we can email them the receipt.
+  function _getPurchaserData (user_id, access_token) {
+    let response = axios.post('https://slack.com/api/users.info', qs.stringify({
+      token: access_token,
+      user: user_id
+    })).catch(function (error) {
+      // TODO: Handle error
+      console.log(error)
+    })
+    return response
   }
 
-  // Send the mailgun email object
-  mailgun.messages().send(emailObj, function (error, body) {
-    if (body) {
-      console.log('success')
-    } else if (error) {
-      console.log('receipt error:', error)
+  // Send the actual email, using the name and email we retrieved from Slack
+  function _sendEmail (name, email) {
+    console.log('Sending to', name + ' <' + email + '>')
+    // Create the mailgun email object
+    var emailObj = {
+      from: 'Hintsy <no-reply@mail.hintsygifts.com>',
+      to: name + ' <' + email + '>',
+      subject: 'Your Yay Prize is Purchased!',
+      html: 'Purchase was made!'
     }
-  })
+    // Send the mailgun email object
+    mailgun.messages().send(emailObj, function (error, body) {
+      if (body) {
+        console.log('success')
+      } else if (error) {
+        console.log('receipt error:', error)
+      }
+    })
+  }
 }
 
 /* *******************************************
