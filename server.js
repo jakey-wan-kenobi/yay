@@ -508,7 +508,18 @@ api.route('/add-shipping-address')
   })
   .post(function (req, res, next) {
     const address = req.body
-    console.log(address, req.query.order)
+    const orderID = req.query.order
+    // Add the address to this orderID in Stripe
+    stripe.orders.update(orderID, {
+      metadata: {
+        address_line1: address.line1,
+        address_line2: address.line2,
+        address_city: address.city,
+        address_postal_code: address.postal_code,
+        address_state: address.state
+      }
+    })
+    // TODO: Send back a response to user
     res.send('got it!')
   })
 
