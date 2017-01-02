@@ -523,7 +523,6 @@ api.route('/add-shipping-address')
       if (err) {
         // TODO: Handle this error. Something went wrong, tell the user.
         res.status(500).send(err)
-        console.log(err)
         return
       }
       // Send success response to client.
