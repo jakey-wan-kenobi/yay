@@ -45,6 +45,7 @@ function approveDomains (opts, certs, cb) {
 // NOTE: Strangeness here. Not sure why we have to serve each page and we can't use a *. Our 404 page won't actually get caught from the app, but from here. Strange.
 app.use('/', express.static('../dist'))
 app.use('/account', express.static('../dist'))
+// TODO: When orders page loads, check Stripe to see if this gift is already shipped. If so, they can't change the address.
 app.use('/orders', express.static('../dist'))
 app.use('/static', express.static(__dirname + '/../dist/static'))
 
