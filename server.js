@@ -45,9 +45,24 @@ function approveDomains (opts, certs, cb) {
 // NOTE: Strangeness here. Not sure why we have to serve each page and we can't use a *. Our 404 page won't actually get caught from the app, but from here. Strange.
 app.use('/', express.static('../dist'))
 app.use('/account', express.static('../dist'))
-// TODO: When orders page loads, check Stripe to see if this gift is already shipped. If so, they can't change the address.
-app.use('/orders', express.static('../dist'))
 app.use('/static', express.static(__dirname + '/../dist/static'))
+// Middleware: When orders page loads, check Stripe to see if this order id is already shipped, whether it's a real order id, etc. If so, they can't change the address.
+app.use('/orders', function (req, res, next) {
+  const orderID = req.query.order
+  stripe.orders.retrieve(orderID, function (err, order) {
+    if (err) {
+      // Order id not in Stripe
+      res.redirect('https://yay.hintsy.io/err/order_not_found')
+    } else if (order.status !== ('created' || 'paid')) {
+      // If order status is already fulfilled, canceled, etc.
+      res.redirect('https://yay.hintsy.io/err/order_fulfilled')
+    } else if (order.status === ('created' || 'paid')) {
+      // Otherwise we're ready to serve the address page
+      next()
+    }
+  })
+})
+app.use('/orders', express.static('../dist'))
 
 // Create website servers
 http.createServer(lex.middleware(require('redirect-https')())).listen(80)
