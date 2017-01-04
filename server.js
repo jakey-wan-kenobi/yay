@@ -44,9 +44,8 @@ function approveDomains (opts, certs, cb) {
 *********************************************/
 // NOTE: Strangeness here. Not sure why we have to serve each page and we can't use a *. Our 404 page won't actually get caught from the app, but from here. Strange.
 app.use('/', express.static('../dist'))
-app.use('/account', express.static('../dist'))
 app.use('/static', express.static(__dirname + '/../dist/static'))
-// Middleware: When orders page loads, check Stripe to see if this order id is already shipped, whether it's a real order id, etc. If so, they can't change the address.
+// Orders Middleware: When orders page loads, check Stripe to see if this order id is already shipped, whether it's a real order id, etc. If so, they can't change the address.
 app.use('/orders', function (req, res, next) {
   const orderID = req.query.order
   stripe.orders.retrieve(orderID, function (err, order) {
@@ -64,6 +63,26 @@ app.use('/orders', function (req, res, next) {
 })
 app.use('/orders', express.static('../dist'))
 
+/* NOTE: This auth flow is worth outlining. Here's how it works.
+  1. Anytime a user navs to /account page, we check for their JWT (which is in the req.headers.cookie)
+  2. If they have it, then we're good, and we know who they are. If they DON'T, we redirect them to the Sign in with Slack URL.
+  3. Once they auth there, they're dropped back at /account with the new cookie (see /auth route below)
+*/
+// Account Middleware: If someone navigates to this page and we don't have a JWT for them OR we didn't just get one from Slack (in the URL), send them to auth at Slack
+app.use('/account', function (req, res, next) {
+  const cookie = req.headers.cookie
+  let authJWT = cookie ? req.headers.cookie.replace('access_token=', '') : null
+  let decodedJWT = _decodeJWT(authJWT)
+  // If not authed, redirect to Slack for sign on
+  if (!decodedJWT) {
+    res.redirect('https://slack.com/oauth/authorize?scope=identity.basic&client_id=104436581472.112407214276')
+    return
+  }
+  // We should have the cookie here, and decoded it into verified auth
+  next()
+})
+app.use('/account', express.static('../dist'))
+
 // Create website servers
 http.createServer(lex.middleware(require('redirect-https')())).listen(80)
 https.createServer(lex.httpsOptions, lex.middleware(app)).listen(443)
@@ -71,9 +90,7 @@ https.createServer(lex.httpsOptions, lex.middleware(app)).listen(443)
 /* *******************************************
   SETUP FIREBASE ACCESS
 *********************************************/
-
 let admin = require('firebase-admin')
-
 admin.initializeApp({
   // TODO: Scope this admin's permissions down to the bare minimum
   credential: admin.credential.cert('../yay-app-12359-firebase-adminsdk-dsrhf-f7ffb3cda0.json'),
@@ -112,6 +129,8 @@ app.use(bodyParser.urlencoded({ extended: false }))
 
 // Pass in the req.body.token and get back the decoded JWT
 function _decodeJWT (token) {
+  // jwt.verify() fails if you pass it null or undefined, so this is necessary
+  if (!token) return false
   let decoded = jwt.verify(token, process.env.JWT_SECRET)
   return decoded
 }
