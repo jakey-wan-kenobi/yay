@@ -78,7 +78,6 @@ app.use('/account', function (req, res, next) {
     res.redirect('https://slack.com/oauth/authorize?scope=identity.basic&client_id=104436581472.112407214276')
     return
   }
-  // We should have the cookie here, and decoded it into verified auth
   next()
 })
 app.use('/account', express.static('../dist'))
@@ -564,6 +563,79 @@ api.route('/add-shipping-address')
       res.send(200)
     })
   })
+
+  /* *******************************************
+      RETRIEVE PREVIOUSLY SAVED CREDIT CARD DETAILS
+  *********************************************/
+api.route('/credit-card-details')
+  .all(function (req, res, next) {
+    res.header('Access-Control-Allow-Origin', '*')
+    res.header('Access-Control-Allow-Headers', 'X-Requested-With, Content-Type, Origin, Accept, Bearer')
+    next()
+  })
+  // This options route is required for the preflight done by the browser
+  .options(function (req, res, next) {
+    res.status(200).end()
+    // next()
+  })
+  .post(function (req, res, next) {
+    // Decore JWT
+    console.log('cookie', req.headers.bearer.replace('access_token=', ''))
+    const authJWT = req.headers.bearer.replace('access_token=', '')
+    const decodedJWT = _decodeJWT(authJWT)
+    co(function * () {
+      // Get user's stripe ID
+      const stripeID = yield _getStripeIDFromSlackID(decodedJWT.team_id, decodedJWT.user_id)
+      // Get user's credit card info using stripe ID
+      const customerData = yield _getStripeCustomerDetails(stripeID)
+      const cardList = customerData.sources.data
+      for (let i = 0; i < cardList.length; i++) {
+        // Since there may be multiple sources, we need to grab the default source from the array of possible sources (stripe always returns an array of sources).
+        if (cardList[i].id === customerData.default_source) {
+          const card = cardList[i]
+          console.log(card)
+          // Cherry pick what data we want to return (we don't want all of it)
+          const dataToSend = {
+            last4: card.last4,
+            brand: card.brand
+          }
+          // Send this back to the client
+          res.send(dataToSend)
+        }
+      }
+    })
+  })
+
+/* *******************************************
+    METHOD: GET STRIPE CUSTOMER FROM STRIPE ID
+*********************************************/
+// TODO: Handle when there are no card details in stripe for this customer
+function _getStripeCustomerDetails (stripeID) {
+  return new Promise(function (resolve, reject) {
+    stripe.customers.retrieve(stripeID, function (err, customer) {
+      if (err) {
+        reject(err)
+        return err
+      }
+      resolve(customer)
+      return customer
+    })
+  })
+}
+
+/* *******************************************
+    METHOD: GET STRIPE ID FROM SLACK ID
+*********************************************/
+// TODO: Handle when there are no stripe id in firebase for this user (they haven't added a card yet)
+function _getStripeIDFromSlackID (teamID, userID) {
+  return new Promise(function (resolve, reject) {
+    let stripeID = db.ref('/slack_accounts_users/' + teamID + '/' + userID + '/stripe_id')
+    stripeID.once('value').then(function (snapshot) {
+      resolve(snapshot.val())
+      return snapshot.val()
+    })
+  })
+}
 
 /* *******************************************
     METHOD: RETURN NEW PRIZE
