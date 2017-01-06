@@ -420,8 +420,9 @@ api.route('/save-order-details')
     co(function * () {
       let stripeIDCheck = yield _checkForStripeID(decodedJWT)
       let customer = yield _processDataConditionally(stripeIDCheck, creditCard, decodedJWT, shipping)
+      let card = _getCardFromStripeData(customer)
       // Send the credit card data back to client (for success/fail message) TODO: What happens if we failed?
-      res.send(customer)
+      res.send(card)
     })
   })
 
@@ -621,22 +622,32 @@ api.route('/credit-card-details')
         res.sendStatus(200)
         return
       }
-      const cardList = customerData.sources.data
-      for (let i = 0; i < cardList.length; i++) {
-        // Since there may be multiple sources, we need to grab the default source from the array of possible sources (stripe always returns an array of sources).
-        if (cardList[i].id === customerData.default_source) {
-          const card = cardList[i]
-          // Cherry pick what data we want to return (we don't want all of it)
-          const dataToSend = {
-            last4: card.last4,
-            brand: card.brand
-          }
-          // Send this back to the client
-          res.send(dataToSend)
-        }
-      }
+      const card = _getCardFromStripeData(customerData)
+      res.send(card)
     })
   })
+
+/* *******************************************
+    METHOD: GET PAYMENT INFO FROM STRIPE CUSTOMER DATA
+*********************************************/
+function _getCardFromStripeData (stripeData) {
+  const cardList = stripeData.sources.data
+  let dataToSend = null
+  for (let i = 0; i < cardList.length; i++) {
+    // Since there may be multiple sources, we need to grab the default source from the array of possible sources (stripe always returns an array of sources).
+    if (cardList[i].id === stripeData.default_source) {
+      const card = cardList[i]
+      // Cherry pick what data we want to return (we don't want all of it)
+      dataToSend = {
+        last4: card.last4,
+        brand: card.brand
+      }
+      // Send this back to the client
+      return dataToSend
+    }
+  }
+  return dataToSend
+}
 
 /* *******************************************
     METHOD: GET STRIPE CUSTOMER FROM STRIPE ID
