@@ -579,21 +579,30 @@ api.route('/credit-card-details')
     // next()
   })
   .post(function (req, res, next) {
-    // Decore JWT
+    // Decode JWT. Remember, we'll always have one of these, because we've already checked auth and redirected them if they aren't signed in (via /account route).
     console.log('cookie', req.headers.bearer.replace('access_token=', ''))
     const authJWT = req.headers.bearer.replace('access_token=', '')
     const decodedJWT = _decodeJWT(authJWT)
     co(function * () {
       // Get user's stripe ID
       const stripeID = yield _getStripeIDFromSlackID(decodedJWT.team_id, decodedJWT.user_id)
+      // Handle if user doesn't have a Stripe ID yet (because they haven't previously added a card). Just close the request with a response and end.
+      if (!stripeID) {
+        res.sendStatus(200)
+        return
+      }
       // Get user's credit card info using stripe ID
       const customerData = yield _getStripeCustomerDetails(stripeID)
+      // NOTE: Do we really need this? Handle if customer doesn't have any credit cards yet (but for some reason has a Stripe ID). Weird but possible I guess.
+      if (!customerData.sources) {
+        res.sendStatus(200)
+        return
+      }
       const cardList = customerData.sources.data
       for (let i = 0; i < cardList.length; i++) {
         // Since there may be multiple sources, we need to grab the default source from the array of possible sources (stripe always returns an array of sources).
         if (cardList[i].id === customerData.default_source) {
           const card = cardList[i]
-          console.log(card)
           // Cherry pick what data we want to return (we don't want all of it)
           const dataToSend = {
             last4: card.last4,
@@ -609,7 +618,6 @@ api.route('/credit-card-details')
 /* *******************************************
     METHOD: GET STRIPE CUSTOMER FROM STRIPE ID
 *********************************************/
-// TODO: Handle when there are no card details in stripe for this customer
 function _getStripeCustomerDetails (stripeID) {
   return new Promise(function (resolve, reject) {
     stripe.customers.retrieve(stripeID, function (err, customer) {
