@@ -152,8 +152,10 @@ app.get('/auth', function (req, res) {
     let result = yield _exchangeCodeForToken(req.query.code)
     // Save the new token to Firebase, or sign the user in if already exists
     let nextResult = yield _saveNewSlackAccountOrSignIn(result.data)
+    // TODO: Pass user's name back to client to display on account page
+    const userRealName = result.data.user.name
     // User is confirmed with Slack! Send them to account page and give them a JWT in cookie (or localStorage)
-    let nextNextResult = _prepareJWTForBrowser(nextResult)
+    let nextNextResult = _prepareJWTForBrowser(nextResult, userRealName)
     // Send the JWT to browser. This contains everything needed to authenticate user, and includes the team_id and user_id so we don't have to go look it up.
     res.cookie('access_token', nextNextResult, { domain: '.hintsy.io', maxAge: 86400000, secure: true })
     // Redirect to account page. May want to suffix with team id: `+ nextResult.team_id || nextResult.team.id`
@@ -169,10 +171,11 @@ app.get('/auth', function (req, res) {
 })
 
 // Create a JWT for this user (this should only be done after confirming identity with Slack)
-function _prepareJWTForBrowser (data) {
+function _prepareJWTForBrowser (data, name) {
   let token = jwt.sign({
     user_id: data.user_id,
-    team_id: data.team_id
+    team_id: data.team_id,
+    user_name: name
   }, process.env.JWT_SECRET, { expiresIn: '24h' })
   return token
 }
