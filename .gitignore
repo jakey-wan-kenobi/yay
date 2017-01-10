@@ -3,8 +3,6 @@ node_modules/
 
 dist/**
 
-dist/account
-
 .env
 
 yay-app-12359-firebase-adminsdk-dsrhf-f7ffb3cda0.json
