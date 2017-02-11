@@ -8,7 +8,7 @@
     "up": "rsync -a . root@yay.hintsy.io:../home/yay --exclude 'node_modules'",
     "dev": "nodemon lib/server.js --exec babel-node",
     "build": "babel lib -d dist",
-    "start": "nodemon dist/server.js"
+    "start": "pm2 start dist/server.js"
   },
   "author": "",
   "license": "ISC",
