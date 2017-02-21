@@ -27,7 +27,8 @@
     "raven": "^1.1.1",
     "request": "^2.79.0",
     "slackbots": "^0.5.3",
-    "stripe": "^4.14.0"
+    "stripe": "^4.14.0",
+    "twilio": "^2.11.1"
   },
   "devDependencies": {
     "babel-cli": "^6.18.0",
