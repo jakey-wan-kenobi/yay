@@ -9,9 +9,9 @@
       /* eslint-disable */
       window.heap=window.heap||[],heap.load=function(e,t){window.heap.appid=e,window.heap.config=t=t||{};var r=t.forceSSL||"https:"===document.location.protocol,a=document.createElement("script");a.type="text/javascript",a.async=!0,a.src=(r?"https:":"http:")+"//cdn.heapanalytics.com/js/heap-"+e+".js";var n=document.getElementsByTagName("script")[0];n.parentNode.insertBefore(a,n);for(var o=function(e){return function(){heap.push([e].concat(Array.prototype.slice.call(arguments,0)))}},p=["addEventProperties","addUserProperties","clearEventProperties","identify","removeEventProperty","setEventProperties","track","unsetEventProperty"],c=0;c<p.length;c++)heap[p[c]]=o(p[c])};
       heap.load("1330843064");
-      heap.track('View 404 Page')
+      heap.track('Sign in Attempted w/o Install')
     </script>
-    <title>Page Not Found</title>
+    <title>Install Yay to Sign In</title>
     <style media="screen" type="text/css">
       * {
         font-family: 'Lato', sans-serif;
@@ -30,13 +30,17 @@
       a {
         color: #6ddefe;
       }
+      a img {
+        margin: 20px;
+      }
     </style>
   </head>
   <body>
     <div class="wrap">
-      <h1>Page Not Found</h1>
-      <p>Sorry, we couldn't find this page!</p>
-      <a href="https://yay.hintsy.io">Head back to Yay?</a>
+      <h1>Looks like you haven't installed Yay yet!</h1>
+      <p>In order to sign in, you need to have the Yay app installed. You can install it with the button below.</p>
+      <a href="https://slack.com/oauth/authorize?scope=commands,bot,chat:write:user&client_id=104436581472.112407214276"><img alt="Add to Slack" height="40" width="139" src="https://platform.slack-edge.com/img/add_to_slack.png" srcset="https://platform.slack-edge.com/img/add_to_slack.png 1x, https://platform.slack-edge.com/img/add_to_slack@2x.png 2x" /></a>
+      <a href="https://yay.hintsy.io" style="display:block; margin: 10px;">Or go back to Yay</a>
     </div>
   </body>
 </html>
