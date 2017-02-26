@@ -1,7 +1,102 @@
+<img src="https://res.cloudinary.com/hintsy/image/upload/v1486932750/yay/unicorn_2x.png" alt="Unicorn" width="100">
 
-### Thoughts
+# Yay! Prizes
 
-**Why is 'request' still a dependency? We're failing without it, but don't seem to use it anywhere?**
+#### An Open Source, Production Slack Bot Built with Node
+
+<a href="http://standardjs.com/"><img src="https://img.shields.io/badge/code%20style-standard-brightgreen.svg" alt="Standard"></a>
+
+
+### Hello There 👋
+
+[Yay!](https://yay.hintsy.io/) is a unicorn that lets you send cool prizes to your friends, without ever leaving Slack. It was built by the team behind [Hintsy](https://hintsygifts.com). We decided to open source the codebase, for a few reasons:
+
+First, almost all of the tools we used to build it are open source , so why not give back to the community?
+
+Second, Slack bots are relatively new, and there isn't a ton of information out there on how to build them. The more the merrier.
+
+Third, the business risk of exposing the code is, in our case, fairly minimal. Nothing sensitive is contained in the repo (nor should it ever be). We don't actually store any sensitive data anywhere, really. We believe it's safe to assume that anything done on a server can pretty much be exposed by the client—thinking your code is secure because it's in a repo is
+
+
+#### Table of Contents
+
+1. Setting up the server
+2. Deployment setup
+3. directory structure & components
+4. Database
+5. Authentication
+6. Async/Await
+7. Documentation & Commenting
+8.
+
+#### Server Setup
+
+Babel installation (reference page), Node, Nodemon, pm2,
+
+#### Deployment Setup
+
+#### Firebase Database
+
+#### Authentication
+
+
+#### Documentation & Commenting
+
+#### Analytics & Error Handling
+
+#### Email & SMS
+
+----
+
+#### Appendix
+
+#####
+
+##### Things to Be Done
+
+- Unit tests
+- e2e tests
+- Better deployment automation
+- Dev and production environments, better distinction
+- Caching (responses could be faster)
+
+##### Further reading:
+
+- Koa (meant to handle a lot of the async/await stuff)
+-
+
+##### A list of all tools referenced:
+
+- Node
+- Digital Ocean
+- Nodemon
+- pm2
+- Babel
+- Async/await
+- Mailgun
+- Twilio
+- Firebase
+- Redis
+-
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+---
 
 #### `npm run up` will upload files from local yay directory to /home/yay
 
