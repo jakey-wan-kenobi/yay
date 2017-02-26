@@ -15,7 +15,7 @@ First, almost all of the tools we used to build it are open source , so why not 
 
 Second, Slack bots are relatively new, and there isn't a ton of information out there on how to build them. The more the merrier.
 
-Third, the business risk of exposing the code is, in our case, fairly minimal. Nothing sensitive is contained in the repo (nor should it ever be). We don't actually store any sensitive data anywhere, really. We believe it's safe to assume that anything done on a server can pretty much be exposed by the client—thinking your code is secure because it's in a repo is
+Third, the business risk of exposing code is, in our case, fairly minimal. Nothing sensitive is contained in the repo (nor should it ever be, really—even private Github repos should not be considered secure). We don't actually store any sensitive data anywhere, really. We believe it's safe to assume that anything done on a server can pretty much be exposed by the client—thinking your code is secure because it's in a repo is
 
 
 #### Table of Contents
@@ -28,6 +28,23 @@ Third, the business risk of exposing the code is, in our case, fairly minimal. N
 6. Async/Await
 7. Documentation & Commenting
 8.
+
+#### Working with the Slack API
+
+The [Slack API docs](https://api.slack.com/) are excellent. I won't repeat anything that they cover here, but I will mention a little gotchas that aren't directly mentioned in the docs.
+
+###### Permissions & Scopes
+
+This aspect of the API could use some improvement. Slack has implemented some extremely granular [permissions and scopes](https://api.slack.com/docs/oauth-scopes) so that apps request only the absolute minimum of permissions that they need to function. This is good. But it's also a pain to work with and understand.
+
+One huge caveat to understand: if you're installing a bot, a ton of permissions come along with that bot. You don't need to add specific scopes and permission covered by the "bot" permission (they overlap). You can see all default bot permisions [here](https://api.slack.com/bot-users).
+
+Note: if you're using a permission that comes along with your "bot" permissions, *you need to use the bot's access token*. If you're using a permission that you've specifically requested, *you need to use the general access token*.
+
+###### "Sign in with Slack" and "Add to Slack"
+
+
+
 
 #### Server Setup
 
@@ -48,9 +65,7 @@ Babel installation (reference page), Node, Nodemon, pm2,
 
 ----
 
-#### Appendix
-
-#####
+### Appendix
 
 ##### Things to Be Done
 
@@ -62,8 +77,8 @@ Babel installation (reference page), Node, Nodemon, pm2,
 
 ##### Further reading:
 
-- Koa (meant to handle a lot of the async/await stuff)
--
+- [The Slack docs](https://api.slack.com/) are excellent
+- [The Slack OAuth flow](https://99designs.com/tech-blog/blog/2015/08/26/add-to-slack-button/)
 
 ##### A list of all tools referenced:
 
@@ -135,17 +150,6 @@ This generate a random base64 string that's super long.
 
 *Notes:*
 
-Server IP: 198.199.108.52
-
-{
-  "code": "104436581472.112364873907.437fe70d73",
-  "state": ""
-}
-
 Super helpful: https://99designs.com/tech-blog/blog/2015/08/26/add-to-slack-button/
 
-TODO: Remember to set up rules for server access to Firebase data: https://firebase.google.com/docs/database/admin/start
-
 Slackbot node library. Got this working but decided I don't really need it: https://github.com/mishk0/slack-bot-api
-
-Notes: It seems that the whole Real Time Messaging thing is probably overkill. Why don't we just add /creditcard and /account commands, and then the first message explains all this and prompts them to set up? Rather than listening on every channel? Or do we really need a bot who can interact and so forth? Perhaps he at least says something whenever his name is mentioned?
