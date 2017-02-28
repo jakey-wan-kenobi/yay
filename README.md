@@ -36,9 +36,8 @@ Below you'll find a few notes and pointers for building on the Slack API, along 
   b. List of Tools Used
 ```
 
-## Working with the Slack API
-
-We wrote a
+# Working with the Slack API
+Working with the Slack API is a breeze, but we wrote a [Medium](LINK) post that details a few pointers and gotchas we discovered as we built out our bot. Take a look before you get started building, it might save you a few headaches.
 
 # About This App
 ##### A few areas that might be of general interest to developers. I review them all in detail in the Github repo, but I’ll list them out below.
@@ -60,30 +59,44 @@ Nodemon is great for development, but is definitely not stable enough for produc
 ### Deployment & Build Scripts
 I don’t like to plunge tons of time into CI or automated deployment until I really need them. What we’ve done instead is implement some basic bash scripts into our npm build scripts, so that doing something like `npm run up` sends our built files to our server over ssh. If I were to improve from there, I'd also restart the server remotely. We're using pm2, and as it is now I ssh into the server and `pm2 restart server` to restart with the new build.
 
+Check the `package.json`, specicially the `up` process. Running `npm run up` will send all the files in our repo to our server.
+
 ### Firebase Database
 Firebase is awesome for getting things scaffolded quickly. I highly recommend it for casual hacking, and I even in several production apps (like this one), though I likely would have used something like Postgres if I intended for this to be a larger effort.
 
+In this case, our `account/database.js` component creates our database instance, and we pass it around to the entire app by importing the module.
+
 ### Authentication
-We use the Slack OAuth flow, combined with JSON Web Tokens (JWTs), as our authentication system. No passwords. I wrote more about the flow in this Github repo. To summarize: user clicks the Sign In button => user is sent to Slack => user authorizes the app => user is sent back to Yay along with a payload that identifies them => we verify that payload, create a JWT, and send it back to the browser for them. Now they’re logged in.
+We use the Slack OAuth flow, combined with JSON Web Tokens (JWTs), as our authentication system. No passwords. I wrote more about the flow [here](LINK). To summarize: user clicks the Sign In button => user is sent to Slack => user authorizes the app => user is sent back to Yay along with a payload that identifies them => we verify that payload, create a JWT, and send it back to the browser for them. Now they’re logged in.
+
+Check out the `auth` directory, along with the `site/auth.js` component to learn how this works.
 
 ### Documentation & Commenting
 I began using the JSDoc commenting style to mark up my components, even though I don’t plan to use the auto-documentation capabilities. I just wanted a consistent way to implement comments and inline documentation. I found this extremely helpful. I think it could even serve as an intermediary step to getting static typic setup in your codebase (because JSDoc asks you to define the types of all your function parameters, which invites you to think about it).
 
+Take a look at nearly any component, at the top of the page, to see what I'm referring to.
+
 ### Analytics & Error Handling
 Nothing special, but if anyone’s curious about deploying a monitoring/logging solution like Rollbar or Sentry, take a look. We also use Heap for analytics. Implementation is pretty simple, but command-F "Heap" if you're curious.
+
+See `core/captureException.js` for exception handling. The Heap tracking details are sprinkled throughout.
 
 ### Environment Variables
 It sounds obvious, but it’s not. I’ve seen real life codebases that support tons of users, with all kinds of API secrets and tokens sprinkled throughout the code. Use environment variables. Do it.
 
+We used [dotenv for Node](https://github.com/motdotla/dotenv), which allows you to insert `process.env.VALUE`, where `VALUE=hereismyvalue` is contained as a line in your `.env` file (which you of course don't commit to your repo).
+
 ### Email & SMS
-We use Mailgun and Twilio (and I can't recommend either service highly enough). We also use the dot templating engine, which is really fast and straightforward.
+We use Mailgun and Twilio (and both services are excellent). We also use the [dot templating engine](http://olado.github.io/doT/index.html), which is really fast and straightforward. Twilio is for sending alerts to admins when prizes are purchased.
+
+See `email/sendPurchaseEmails.js` and `twilio/sendTexts` for details.
 
 ### Weak Areas
-Just like any real life codebase, a few parts of it suck. One of those is unit tests. Didn’t write a single one. We could also dry up some error pages. Also, I use `require` instead of `import` in a few places where I totally spaced and couldn’t get it to work with `import`.
+Just like any real life codebase, a few parts of it suck. One of those is unit tests. We didn’t write a single one. We could also dry up some error pages. Also, I use `require` instead of `import` in a few places where I totally spaced and couldn’t get it to work with `import`.
 
-Also, response times from the Slack and Stripe APIs aren't always the best. Sometimes I can only turn a response around in about 400-500ms. If I were really worried about it, I'd implement redis for caching the products we're fetching (there's no need to fetch them from the Stripe API every time).
+Also, response times from the Slack and Stripe APIs aren't always the best. Sometimes I can only turn a response around in about 400-500ms. If I were really worried about it, I'd implement Redis for caching the products we're fetching (there's no need to fetch them from the Stripe API every time).
 
-Finally, we could probably make the development and production environments more distinct, using enviornment variables to serve up different functionality.
+Finally, we could probably make the development and production environments more distinct, using environment variables to serve up different functionality.
 
 
 ----
@@ -106,65 +119,3 @@ Finally, we could probably make the development and production environments more
 - Mailgun
 - Twilio
 - Firebase
-- Redis
--
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
----
-
-#### `npm run up` will upload files from local yay directory to /home/yay
-
-This allows you to...
-
-1. Run `nodemon server.js` on the server
-2. Make your changes locally and save them
-3. Go into local terminal and run `npm run up`
-4. Watch the server restart on the remote (live) server
-
-So now there's no need to sync local and remote scripts by copy/pasting. Next step would be to auto-upload the changes on save (either a watch script, or with something like save-commands for atom editor), so we run the `npm run up` command on save.
-
-
-**Process for Deploying to Remote Server**
-1. Clone bare repo on the server itself (so it's just .git file sitting in there)
-2. Then create a script that literally just checks out the repo into the folder you want it to be in
-
-
-**We're going to need our own authentication system.** We can use Slack/OAuth to allow Yay to access Slack information. But how do we identify our users when the requests aren't coming directly from Slack, with the relevant tokens included? For example, how do we log them in at yay.hintsy.io and allow them to change their credit card or address?
-
-I think the best process is:
-1. User clicks 'Sign in with Slack'
-2. Slack authorizes the user, returning a code, which we exchange for an accses_token
-3. We save this access_token and relevant user/team info to Firebase.
-4. We use the access_token(?) to create a signed JWT, and send that to browser in a cookie. Redirect user to account page.
-5. Then we use the JWT to lookup the corresponding team (decoding it to query by access_token). We should then indexOn access_token for performance.
-
-Note that since this is the case, we might as well use Mongo rather than Firebase.
-
-### How to generate a random key to use for JWT secret:
-
-`node -e "console.log(require('crypto').randomBytes(256).toString('base64'));"`
-
-This generate a random base64 string that's super long.
-
-
-*Notes:*
-
-Super helpful: https://99designs.com/tech-blog/blog/2015/08/26/add-to-slack-button/
-
-Slackbot node library. Got this working but decided I don't really need it: https://github.com/mishk0/slack-bot-api
