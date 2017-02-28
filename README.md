@@ -47,11 +47,56 @@ We used async/await, an ES7 feature, extensively throughout the app. It was glor
 
 If you have multiple requests to make, you can string them together very easily this way.
 
-As an example, check out `site/auth.js`, where we await a variety of requests (like `account/exchangeSlackCodeForToken`, for example). This flow is really interesting. It allows you to build out components, then string them together consecutively. It's very easy to understand, and is ridiculously easy compared with callbacks and working directly with promises. Your async function becomes a kind of "runway" for your business logic, which is all neatly contained elsewhere. You just have to make sure your components are returning promises rather than the direct values themselves.
+As an example, check out `site/auth`, where we await a variety of requests (like `account/exchangeSlackCodeForToken`, for example).
+
+```
+function exchangeSlackCodeForToken (codeRecieved) {
+  let promise = axios.post('https://slack.com/api/oauth.access', qs.stringify({
+    client_id: process.env.SLACK_CLIENT_ID,
+    client_secret: process.env.SLACK_CLIENT_SECRET,
+    code: codeRecieved
+  })).catch(function (error) {
+    captureException(error, 'Error accessing a URL with axios', 196830)
+  })
+  return promise
+}
+```
+
+Then later on, in `site/auth`, I can use this component like this:
+
+```
+(async function () {
+  // Exchange the code for a token
+  const result = await exchangeSlackCodeForToken(req.query.code)
+  // Save the new token to Firebase, or sign the user in if already exists
+  const nextResult = await saveNewSlackAccountOrSignIn(result.data, db, res)
+
+  [Do more logic]...
+
+)()
+
+```
+
+This flow is really interesting. It allows you to build out components, then string them together consecutively. It's very easy to understand, and is ridiculously easy compared with callbacks and working directly with promises. Your async function becomes a kind of "runway" for your business logic, which is all neatly contained elsewhere. You just have to make sure your components are returning promises rather than the direct values themselves.
 
 And remember, you don't have to use a library like `axios` either. You can just create a promise in your components and return it. Check out `account/getSlackTokenFromTeamID`, for example, where it starts with `return new Promise(function (resolve, reject)...)`.
 
-Also, make absolute sure you aren't `awaiting` when you don't actually have to. Sometimes you need to `await` 2 or more values, but they don't need to await each other to execute. You want all of your processes to run as soon as the new data is available to them. To get around instances like this, you can call all your ready-to-execute, promise-returning functions simultaneously, and then await them later on. For example, check out `api/creditCardDetails.js`, on line 33, where I want to make 2 requests and then check which one exists to move forward. What I *don't* want to do is make one request, wait till it finishes to see if it exists, and then make my second requst if it doesn't. This would double our time spent waiting for requests.
+Also, make absolute sure you aren't `awaiting` when you don't actually have to. Sometimes you need to `await` 2 or more values, but they don't need to await each other to execute. You want all of your processes to run as soon as they can. To get around instances like this, you can call all your ready-to-execute, promise-returning functions simultaneously, and then await them later on. For example, check out `api/creditCardDetails`, on line 33, where I want to make 2 requests and then check which one exists to move forward. What I *don't* want to do is make one request, wait till it finishes to see if it exists, and then make my second requst if it doesn't. This would double our time spent waiting for requests in cases where the first value doesn't exist.
+
+```
+(async function () {
+  const response = {}
+  // NOTE: These can run parallel, but we need both before moving forward. So we invoke the functions immediately to run concurrently, and simply await the promises of both before proceeding.
+  const teamStripeIDPromise = getTeamStripeIDFromTeamSlackID(decodedJWT.team_id, db)
+  const stripeIDPromise = getStripeIDFromSlackID(decodedJWT.team_id, decodedJWT.user_id, db)
+  const teamStripeID = await teamStripeIDPromise
+  const stripeID = await stripeIDPromise
+
+  [Do more logic]...
+
+)()
+
+```
 
 
 ### Directory Structure & Naming Conventions
@@ -73,12 +118,12 @@ Check the `package.json`, specicially the `up` process. Running `npm run up` wil
 ### Firebase Database
 Firebase is awesome for getting things scaffolded quickly. I highly recommend it for casual hacking, and I even in several production apps (like this one), though I likely would have used something like Postgres if I intended for this to be a larger effort.
 
-In this case, our `account/database.js` component creates our database instance, and we pass it around to the entire app by importing the module.
+In this case, our `account/database` component creates our database instance, and we pass it around to the entire app by importing the module.
 
 ### Authentication
-We use the Slack OAuth flow, combined with JSON Web Tokens (JWTs), as our authentication system. No passwords. I wrote more about the flow [here](LINK). To summarize: user clicks the Sign In button => user is sent to Slack => user authorizes the app => user is sent back to Yay along with a payload that identifies them => we verify that payload, create a JWT, and send it back to the browser for them. Now they’re logged in.
+We use the Slack OAuth flow, combined with JSON Web Tokens (JWTs), as our authentication system. No passwords. I wrote more about the flow [here](https://github.com/jakey-wan-kenobi). To summarize: user clicks the Sign In button => user is sent to Slack => user authorizes the app => user is sent back to Yay along with a payload that identifies them => we verify that payload, create a JWT, and send it back to the browser for them. Now they’re logged in.
 
-Check out the `auth` directory, along with the `site/auth.js` component to learn how this works.
+Check out the `auth` directory, along with the `site/auth` component to learn how this works.
 
 ### Documentation & Commenting
 I began using the JSDoc commenting style to mark up my components, even though I don’t plan to use the auto-documentation capabilities. I just wanted a consistent way to implement comments and inline documentation. I found this extremely helpful. I think it could even serve as an intermediary step to getting static typic setup in your codebase (because JSDoc asks you to define the types of all your function parameters, which invites you to think about it).
@@ -88,7 +133,7 @@ Take a look at nearly any component, at the top of the page, to see what I'm ref
 ### Analytics & Error Handling
 Nothing special, but if anyone’s curious about deploying a monitoring/logging solution like Rollbar or Sentry, take a look. We also use Heap for analytics. Implementation is pretty simple, but command-F "Heap" if you're curious.
 
-See `core/captureException.js` for exception handling. The Heap tracking details are sprinkled throughout.
+See `core/captureException` for exception handling. The Heap tracking details are sprinkled throughout.
 
 ### Environment Variables
 It sounds obvious, but it’s not. I’ve seen real life codebases that support tons of users, with all kinds of API secrets and tokens sprinkled throughout the code. Use environment variables. Do it.
@@ -98,9 +143,9 @@ We used [dotenv for Node](https://github.com/motdotla/dotenv), which allows you 
 ### Email & SMS
 We use Mailgun and Twilio (and both services are excellent). We also use the [dot templating engine](http://olado.github.io/doT/index.html), which is really fast and straightforward. Twilio is for sending alerts to admins when prizes are purchased.
 
-See `email/sendPurchaseEmails.js` and `twilio/sendTexts` for details.
+See `email/sendPurchaseEmails` and `twilio/sendTexts` for details.
 
-### Weak Areas
+### Areas for Improvement
 Just like any real life codebase, a few parts of it suck. One of those is unit tests. We didn’t write a single one. We could also dry up some error pages. Also, I use `require` instead of `import` in a few places where I totally spaced and couldn’t get it to work with `import`.
 
 Also, response times from the Slack and Stripe APIs aren't always the best. Sometimes I can only turn a response around in about 400-500ms. If I were really worried about it, I'd implement Redis for caching the products we're fetching (there's no need to fetch them from the Stripe API every time).
