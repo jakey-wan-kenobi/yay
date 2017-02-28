@@ -2,81 +2,69 @@
 
 # Yay! Prizes
 
-#### An Open Source, Production Slack Bot Built with Node
+#### An Open Source Slack Bot Built with Node
 
 <a href="http://standardjs.com/"><img src="https://img.shields.io/badge/code%20style-standard-brightgreen.svg" alt="Standard"></a>
 
 
-### Hello There 👋
+## Hello There 👋
 
-[Yay!](https://yay.hintsy.io/) is a unicorn that lets you send cool prizes to your friends, without ever leaving Slack. It was built by the team behind [Hintsy](https://hintsygifts.com). Despite that this is not a module or library or anything else that can be used in a project as a dependency, we decided to open source the codebase.
+[Yay!](https://yay.hintsy.io/) is a unicorn that lets you send cool prizes to your friends, without ever leaving Slack. On the surface it’s a toy, but underneath it’s a team and culture building tool (and a toy). It was built by the team behind [Hintsy](https://hintsygifts.com). We’re open sourcing the codebase, even though it’s not a module or library or anything else that can be used in your projects as a dependency. We did this in hopes that it's useful for developers building on the Slack API (or creating Node backends in general).
 
-We hope this can be used by teams and developers as a reference for building
-
-We did this for a bunch of different reasons. If you're curious, check out the blog post: LINK
-
+If you're curious, we wrote more about it on [Medium](LINK).
 
 #### Table of Contents
 
-1. Setting up the server
-2. Deployment setup
-3. directory structure & components
-4. Database
-5. Authentication
-6. Async/Await
-7. Documentation & Commenting
-8.
 
-#### Working with the Slack API
 
-The [Slack API docs](https://api.slack.com/) are excellent. I won't repeat anything that they cover here, but I will mention a little gotchas that aren't directly mentioned in the docs.
+## Working with the Slack API
 
-###### Permissions & Scopes
+We wrote a
 
-This aspect of the API could use some improvement. Slack has implemented some extremely granular [permissions and scopes](https://api.slack.com/docs/oauth-scopes) so that apps request only the absolute minimum of permissions that they need to function. This is good. But it's also a pain to work with and understand.
+# About the App
+##### A few areas that might be of general interest to developers. I review them all in detail in the Github repo, but I’ll list them out below.
 
-One huge caveat to understand: if you're installing a bot, a ton of permissions come along with that bot. You don't need to add specific scopes and permission covered by the "bot" permission (they overlap). You can see all default bot permisions [here](https://api.slack.com/bot-users).
+### Async/Await & Promises
+We used this ES7 feature extensively throughout the app, and it was glorious. It opens up some pretty amazing capabilities, with a few caveats. One thing I didn’t particularly like was that you end up using async functions as wrappers for your async functionality. I ended up using self executing anonymous functions as wrappers. It’d be nice to have some alternative way to declare that you’re about to run some async functions. Check out the repo for more details.
 
-Note: if you're using a permission that comes along with your "bot" permissions, *you need to use the bot's access token*. If you're using a permission that you've specifically requested, *you need to use the general access token*.
-
-###### "Sign in with Slack" and "Add to Slack"
-
-#### Async/Await & Promises
-We used this ES7 feature extensively throughout the app, and it was glorious. It opens up some pretty amazing capabilities, with a few caveats. Check out the repo for more details.
-
-#### Directory Structure & Naming Conventions
+### Directory Structure & Naming Conventions
 We experimented with a very literal structure and naming conventions. Component files have names like `getOrderDetailsFromStripeID.js`. It might seem a bit overkill, but it was actually incredibly helpful as we built out and reused components across the app. I think I’m going to stick with naming conventions like these moving forward. It’s helpful that anyone with a rough understanding of the codebase can look at a component name and easily get what it’s used for.
 
-#### Server Setup
+### Server Setup
 
 Babel installation (reference page), Node, Nodemon, pm2,
 
+We built it in Node, with Babel and Express (and like 25 other dependencies, of course).
+
 Nodemon is great for development, but is definitely not stable enough for production use. Instead, we use pm2 for production, which is also more cumbersome to use for development. I think using both for the two use cases gives you the best of both worlds.
 
-#### Deployment & Build Scripts
+### Deployment & Build Scripts
 I don’t like to plunge tons of time into CI or automated deployment until I really need them. What we’ve done instead is implement some basic bash scripts into our npm build scripts, so that doing something like `npm run up` sends our built files to our server over ssh. If I were to improve from there, I'd also restart the server remotely. We're using pm2, and as it is now I ssh into the server and `pm2 restart server` to restart with the new build.
 
-#### Firebase Database
+### Firebase Database
 Firebase is awesome for getting things scaffolded quickly. I highly recommend it for casual hacking, and I even in several production apps (like this one), though I likely would have used something like Postgres if I intended for this to be a larger effort.
 
-#### Authentication
-We use a combination of the Slack OAuth flow, combined with JSON Web Tokens, as our authentication system. No passwords. I wrote more about this flow in this Github repo.
+### Authentication
+We use the Slack OAuth flow, combined with JSON Web Tokens (JWTs), as our authentication system. No passwords. I wrote more about the flow in this Github repo. To summarize: user clicks the Sign In button => user is sent to Slack => user authorizes the app => user is sent back to Yay along with a payload that identifies them => we verify that payload, create a JWT, and send it back to the browser for them. Now they’re logged in.
 
-#### Documentation & Commenting
+### Documentation & Commenting
 I began using the JSDoc commenting style to mark up my components, even though I don’t plan to use the auto-documentation capabilities. I just wanted a consistent way to implement comments and inline documentation. I found this extremely helpful. I think it could even serve as an intermediary step to getting static typic setup in your codebase (because JSDoc asks you to define the types of all your function parameters, which invites you to think about it).
 
-#### Analytics & Error Handling
+### Analytics & Error Handling
 Nothing special, but if anyone’s curious about deploying a monitoring/logging solution like Rollbar or Sentry, take a look. We also use Heap for analytics. Implementation is pretty simple, but command-F "Heap" if you're curious.
 
-#### Email & SMS
+### Environment Variables
+It sounds obvious, but it’s not. I’ve seen real life codebases that support tons of users, with all kinds of API secrets and tokens sprinkled throughout the code. Use environment variables. Do it.
+
+### Email & SMS
 We use Mailgun and Twilio (and I can't recommend either service highly enough).
 
-#### Weak Areas
+### Weak Areas
 Just like any real life codebase, a few parts of it suck. One of those is unit tests. Didn’t write a single one. We could also dry up some error pages. Also, I use `require` instead of `import` in a few places where I totally spaced and couldn’t get it to work with `import`.
 
 Also, response times from the Slack and Stripe APIs aren't always the best. Sometimes I can only turn a response around in about 400-500ms. If I were really worried about it, I'd implement redis for caching the products we're fetching (there's no need to fetch them from the Stripe API every time).
 
-Finally, we could probably make the development and production environments more distinct, using enviornment variables to serve up different functionality. 
+Finally, we could probably make the development and production environments more distinct, using enviornment variables to serve up different functionality.
 
 
 ----
