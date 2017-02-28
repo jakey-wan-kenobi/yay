@@ -13,15 +13,34 @@
 
 If you're curious, we wrote more about it on [Medium](LINK).
 
+Below you'll find a few notes and pointers for building on the Slack API, along with a brief overview of all the things in this repo that may be interesting to developers looking for inspiration.
+
 #### Table of Contents
 
-
+```
+1.Working with the Slack API
+2. About This App
+  a. Async/Await with Babel
+  b. Directory Structure & Naming conventions
+  c. Server & Development Environment
+  d. Deployment & Build scripts
+  e. Firebase Database
+  f. Authentication
+  g. Documentation & Commenting
+  h. Analytics & Error Handling
+  i. Environment Variables
+  j. Email & SMS
+  k. Room for Improvement
+3. Appendix
+  a. Helpful References
+  b. List of Tools Used
+```
 
 ## Working with the Slack API
 
 We wrote a
 
-# About the App
+# About This App
 ##### A few areas that might be of general interest to developers. I review them all in detail in the Github repo, but I’ll list them out below.
 
 ### Async/Await & Promises
@@ -57,7 +76,7 @@ Nothing special, but if anyone’s curious about deploying a monitoring/logging 
 It sounds obvious, but it’s not. I’ve seen real life codebases that support tons of users, with all kinds of API secrets and tokens sprinkled throughout the code. Use environment variables. Do it.
 
 ### Email & SMS
-We use Mailgun and Twilio (and I can't recommend either service highly enough).
+We use Mailgun and Twilio (and I can't recommend either service highly enough). We also use the dot templating engine, which is really fast and straightforward.
 
 ### Weak Areas
 Just like any real life codebase, a few parts of it suck. One of those is unit tests. Didn’t write a single one. We could also dry up some error pages. Also, I use `require` instead of `import` in a few places where I totally spaced and couldn’t get it to work with `import`.
@@ -69,22 +88,14 @@ Finally, we could probably make the development and production environments more
 
 ----
 
-### Appendix
+# Appendix
 
-##### Things to Be Done
-
-- Unit tests
-- e2e tests
-- Better deployment automation
-- Dev and production environments, better distinction
-- Caching (responses could be faster)
-
-##### Further reading:
+## Helpful References & Docs:
 
 - [The Slack docs](https://api.slack.com/) are excellent
 - [The Slack OAuth flow](https://99designs.com/tech-blog/blog/2015/08/26/add-to-slack-button/)
 
-##### A list of all tools referenced:
+## List of Tools Used:
 
 - Node
 - Digital Ocean
