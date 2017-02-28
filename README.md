@@ -43,7 +43,16 @@ Working with the Slack API is a breeze, but we wrote a [Medium](LINK) post that 
 ##### A few areas that might be of general interest to developers. I review them all in detail in the Github repo, but I’ll list them out below.
 
 ### Async/Await & Promises
-We used this ES7 feature extensively throughout the app, and it was glorious. It opens up some pretty amazing capabilities, with a few caveats. One thing I didn’t particularly like was that you end up using async functions as wrappers for your async functionality. I ended up using self executing anonymous functions as wrappers. It’d be nice to have some alternative way to declare that you’re about to run some async functions. Check out the repo for more details.
+We used async/await, an ES7 feature, extensively throughout the app. It was glorious. It opens up some pretty awesome capabilities. We used it in combination with `axios`, a promise-based HTTP library. This allows you to do things like build a component that returns a POST request made with axios (thereby returning a promise), then `await`ing that component in an async function. (Every promise can be `await`ed inside an async function).
+
+If you have multiple requests to make, you can string them together very easily this way.
+
+As an example, check out `site/auth.js`, where we await a variety of requests (like `account/exchangeSlackCodeForToken`, for example). This flow is really interesting. It allows you to build out components, then string them together consecutively. It's very easy to understand, and is ridiculously easy compared with callbacks and working directly with promises. Your async function becomes a kind of "runway" for your business logic, which is all neatly contained elsewhere. You just have to make sure your components are returning promises rather than the direct values themselves.
+
+And remember, you don't have to use a library like `axios` either. You can just create a promise in your components and return it. Check out `account/getSlackTokenFromTeamID`, for example, where it starts with `return new Promise(function (resolve, reject)...)`.
+
+Also, make absolute sure you aren't `awaiting` when you don't actually have to. Sometimes you need to `await` 2 or more values, but they don't need to await each other to execute. You want all of your processes to run as soon as the new data is available to them. To get around instances like this, you can call all your ready-to-execute, promise-returning functions simultaneously, and then await them later on. For example, check out `api/creditCardDetails.js`, on line 33, where I want to make 2 requests and then check which one exists to move forward. What I *don't* want to do is make one request, wait till it finishes to see if it exists, and then make my second requst if it doesn't. This would double our time spent waiting for requests.
+
 
 ### Directory Structure & Naming Conventions
 We experimented with a very literal structure and naming conventions. Component files have names like `getOrderDetailsFromStripeID.js`. It might seem a bit overkill, but it was actually incredibly helpful as we built out and reused components across the app. I think I’m going to stick with naming conventions like these moving forward. It’s helpful that anyone with a rough understanding of the codebase can look at a component name and easily get what it’s used for.
