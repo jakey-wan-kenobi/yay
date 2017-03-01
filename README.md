@@ -37,7 +37,29 @@ Below you'll find a few notes and pointers for building on the Slack API, along 
 ```
 
 # Working with the Slack API
-Working with the Slack API is a breeze, but we wrote a [Medium](LINK) post that details a few pointers and gotchas we discovered as we built out our bot. Take a look before you get started building, it might save you a few headaches.
+The Slack platform team is incredibly helpful and kind, and the development experience is a pleasure. Their API docs are world class. There’s a nice, helpful Slack development community that happily answered a variety of questions for us. And there are tools like the Slack message builder that help you compose complex messages and visualize changes. There are just a few gotchas I would call out to people trying to create a Slack bot for the first time.
+
+## Working with Permissions and Scopes
+First, working with permissions and scopes is a little painful. Slack has implemented some extremely granular permissions and scopes so that apps request only the absolute minimum amount of access to data that they need to function. This is good. But it’s also a pain to work with and understand.
+
+Remember this: if you’re installing a bot, a ton of permissions come along with that bot. You don’t need to add specific scopes and permissions that are already covered by the “bot” permission (a lot of them overlap). You can see all default bot permissions here. But pay attention: if you’re using a permission that comes along with your “bot” permissions, you need to use the bot’s access token. If you’re using a permission that you’ve specifically requested, you need to use the general access token. This was the source of confusion a few different times, and I think it could be made clearer in the docs. 
+
+One other thing regarding permissions and scopes: the Slack API management console asks you to fill in all the permissions and scopes you’re requesting, with explanations for why you need them. This section is only used in the review process. It does not grant your app those permissions automatically. To do that, you must include the permissions you want on the initial auth flow URL, like this: 
+```
+https://slack.com/oauth/authorize?scope=commands,bot,chat:write:user&client_id=XXXXXX
+```
+This app, for example, has requested the commands, bot, and chat:write:user permissions. 
+Also remember: if you change the scopes in this URL, you need to reinstall the app. They won’t update automatically (seems obvious, but hey…). 
+
+## Building “App” Functionality with Message Buttons
+Message buttons are one of the more sophisticated features of the Slack API, allowing users to perform more complex actions and layer in functionality and communication with external services. 
+
+They’re a bit of a pain to work with. You can only set up a single route in your API to receive all message button requests. That means if your app has 7 different buttons for various functionality (like ours), you’ll need to stuff various parameters into the message object when you’re building it that identifies what kind of action it should take when it’s clicked. It also means you’re listening for all 7 of those message button events on the same route (`api/yayMessageButtons`), with some kind of if/then or switch logic to handle them all. Plus, there’s only 2 places to put your parameters (the actions.name and callback_id), meaning you have to get creative if you need more than that. In our case, we did need more than that, so we had to concatenate certain values and stuff them all in the callback_id, then parse them when they came back in an event. See the `slackApp/buildPrizeMessage` component for more details.
+
+This aspect of the API should probably change. It’s too cumbersome. It’d be relatively easy to define the URL you’d like the message button to hit on the actual message object itself, which would allow you to separate all of this out into different functionality. It’d also be nice to have a metadata array on the object, where you can put optional, custom fields. But what are you gonna do?
+
+
+---
 
 # About This App
 ##### A few areas that might be of general interest to developers. I review them all in detail in the Github repo, but I’ll list them out below.
@@ -160,4 +182,4 @@ Finally, we could probably make the development and production environments more
 ## Helpful References & Docs:
 
 - [The Slack docs](https://api.slack.com/) are excellent
-- [The Slack OAuth flow](https://99designs.com/tech-blog/blog/2015/08/26/add-to-slack-button/)
+- [The Slack OAuth flow](https://99designs.com/tech-blog/blog/2015/08/26/add-to-slack-button/). An excellent introduction to
