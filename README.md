@@ -161,15 +161,3 @@ Finally, we could probably make the development and production environments more
 
 - [The Slack docs](https://api.slack.com/) are excellent
 - [The Slack OAuth flow](https://99designs.com/tech-blog/blog/2015/08/26/add-to-slack-button/)
-
-## List of Tools Used:
-
-- Node
-- Digital Ocean
-- Nodemon
-- pm2
-- Babel
-- Async/await
-- Mailgun
-- Twilio
-- Firebase
