@@ -42,17 +42,21 @@ The Slack platform team is incredibly helpful and kind, and the development expe
 ## Working with Permissions and Scopes
 First, working with permissions and scopes is a little painful. Slack has implemented some extremely granular permissions and scopes so that apps request only the absolute minimum amount of access to data that they need to function. This is good. But it’s also a pain to work with and understand.
 
-Remember this: if you’re installing a bot, a ton of permissions come along with that bot. You don’t need to add specific scopes and permissions that are already covered by the “bot” permission (a lot of them overlap). You can see all default bot permissions here. But pay attention: if you’re using a permission that comes along with your “bot” permissions, you need to use the bot’s access token. If you’re using a permission that you’ve specifically requested, you need to use the general access token. This was the source of confusion a few different times, and I think it could be made clearer in the docs. 
+Remember this: if you’re installing a bot, a ton of permissions come along with that bot. You don’t need to add specific scopes and permissions that are already covered by the [“bot” permission](https://api.slack.com/bot-users) (a lot of them overlap). You can see all default bot permissions here. But pay attention: if you’re using a permission that comes along with your “bot” permissions, you need to use the bot’s access token. If you’re using a permission that you’ve specifically requested, you need to use the general access token. This was the source of confusion a few different times, and I think it could be made clearer in the docs. 
 
-One other thing regarding permissions and scopes: the Slack API management console asks you to fill in all the permissions and scopes you’re requesting, with explanations for why you need them. This section is only used in the review process. It does not grant your app those permissions automatically. To do that, you must include the permissions you want on the initial auth flow URL, like this: 
+One other thing regarding permissions and scopes: the Slack API management console asks you to fill in all the permissions and scopes you’re requesting, with explanations for why you need them. This section is only used in the review process. It does not grant your app those permissions automatically. To do that, you must include the permissions you want on the initial auth flow URL, like this:
+ 
 ```
 https://slack.com/oauth/authorize?scope=commands,bot,chat:write:user&client_id=XXXXXX
 ```
-This app, for example, has requested the commands, bot, and chat:write:user permissions. 
-Also remember: if you change the scopes in this URL, you need to reinstall the app. They won’t update automatically (seems obvious, but hey…). 
+
+This app, for example, has requested the `commands`, `bot`, and `chat:write:user` permissions. 
+Also remember: if you change the scopes in this URL, you need to remove and reinstall the app in Slack for your changes to propagate. They won’t update automatically (seems obvious, but hey…). 
 
 ## Building “App” Functionality with Message Buttons
 Message buttons are one of the more sophisticated features of the Slack API, allowing users to perform more complex actions and layer in functionality and communication with external services. 
+
+![Slack message buttons](https://a.slack-edge.com/dcb1/img/api/message_guidelines/Example_6.gif)
 
 They’re a bit of a pain to work with. You can only set up a single route in your API to receive all message button requests. That means if your app has 7 different buttons for various functionality (like ours), you’ll need to stuff various parameters into the message object when you’re building it that identifies what kind of action it should take when it’s clicked. It also means you’re listening for all 7 of those message button events on the same route (`api/yayMessageButtons`), with some kind of if/then or switch logic to handle them all. Plus, there’s only 2 places to put your parameters (the actions.name and callback_id), meaning you have to get creative if you need more than that. In our case, we did need more than that, so we had to concatenate certain values and stuff them all in the callback_id, then parse them when they came back in an event. See the `slackApp/buildPrizeMessage` component for more details.
 
@@ -126,16 +130,14 @@ We experimented with a very literal structure and naming conventions. Component 
 
 ### Server Setup
 
-Babel installation (reference page), Node, Nodemon, pm2,
+We built this app in Node, with Babel and Express (and like 25 other dependencies, of course). We followed this general pattern for scaffolding the app: https://github.com/babel/example-node-server.
 
-We built it in Node, with Babel and Express (and like 25 other dependencies, of course).
-
-Nodemon is great for development, but is definitely not stable enough for production use. Instead, we use pm2 for production, which is also more cumbersome to use for development. I think using both for the two use cases gives you the best of both worlds.
+We use both Nodemon and pm2. Nodemon is great for development, but is definitely not stable enough for production use. Instead, we use pm2 for production, which is also more cumbersome to use for development. I think using both for the two use cases gives you the best of both worlds.
 
 ### Deployment & Build Scripts
 I don’t like to plunge tons of time into CI or automated deployment until I really need them. What we’ve done instead is implement some basic bash scripts into our npm build scripts, so that doing something like `npm run up` sends our built files to our server over ssh. If I were to improve from there, I'd also restart the server remotely. We're using pm2, and as it is now I ssh into the server and `pm2 restart server` to restart with the new build.
 
-Check the `package.json`, specicially the `up` process. Running `npm run up` will send all the files in our repo to our server.
+Check the `package.json`, specicially the `up` process. Running `npm run up` will send all the files in our repo up to our server.
 
 ### Firebase Database
 Firebase is awesome for getting things scaffolded quickly. I highly recommend it for casual hacking, and I even in several production apps (like this one), though I likely would have used something like Postgres if I intended for this to be a larger effort.
